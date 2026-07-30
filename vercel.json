@@ -1,0 +1,6 @@
+{
+  "crons": [
+    { "path": "/api/cron/refresh-rankings", "schedule": "* * * * *" },
+    { "path": "/api/cron/expire-sessions", "schedule": "*/10 * * * *" }
+  ]
+}
