@@ -31,6 +31,15 @@ err  401 INVALID_CREDENTIALS, 423 LOCKED { lockedUntil }
 ### `GET /api/me` → `{ nickname, orgUnitName, departmentName, totalScore, roundsTaken, totalRank }`
 - `totalRank` = 포인트 기준 누적 순위(홈 요약 카드용). 본인 행 1건만 `v_rank_total` 직접 조회 — addendum B항. 순위 미대상(미응시·최소 회차 미달)이면 `null`.
 
+### `GET /api/me/stats`
+내 기록 화면용(T11).
+```
+{ categories: [{ category, total, correct, pct }], prelearningViewed: [roundNo] }
+```
+- `category`는 문항 영역 코드(F/E/G/O/H/K/L/S). 코드→한글 라벨은 화면 상수 — `design/copy.md` 내 기록 절.
+- ★ **측정 문항(category NULL)은 집계에서 제외**하며 별도 묶음으로도 노출하지 않는다(규칙 2-1 취지 — 측정 문항군의 존재·규모 식별 차단).
+- 확정 세션(completed·expired)의 확정 문항(답변 또는 시간초과)만 집계한다.
+
 ## 회차
 
 ### `GET /api/rounds`
@@ -128,17 +137,37 @@ res { isCorrect, isTimeout, correctAnswerLabel, explanation, legalRef,
 - 미인증 `401 UNAUTHENTICATED`, 무효 회차 `404 NOT_FOUND`. 해당 회차 snapshot이 없으면 `[]`.
 
 ## 관리자
+- 인증: `hq_admin` 쿠키 — 참가자 세션과 이름만 분리, path=/ (addendum G-2). 미인증 시 `401 UNAUTHENTICATED`.
+  참가자 쿠키로 관리자 API를, 관리자 쿠키로 참가자 API를 호출하면 401이다.
+- 잠금: **10회 실패 → 10분** (`admin_max_attempts` / `admin_lock_minutes`, addendum G-1).
+
+### `POST /api/admin/auth/login`
 ```
-POST /api/admin/auth/login            // req { loginId, password } -> 200 { loginId }
-POST /api/admin/auth/logout           // -> 204
-GET  /api/admin/stats/participation
-GET /api/admin/stats/items
-GET /api/admin/stats/matched          // 동일인 대조
-GET /api/admin/stats/heatmap
-GET /api/admin/stats/prelearning
-GET /api/admin/short-unmatched        // SHORT 미매칭 응답
-GET /api/admin/export/[kind]          // CSV (UTF-8 BOM)
+req  { loginId, password }
+res  200 { loginId }
+err  401 INVALID_CREDENTIALS, 423 LOCKED { lockedUntil }
 ```
+- `admin_user`가 비어 있고 `ADMIN_LOGIN_ID`/`ADMIN_INIT_PASSWORD`가 설정된 경우에만 최초 1회 시딩한다(G항). 시딩 후 환경변수를 삭제한다.
+
+### `POST /api/admin/auth/logout` → `204`
+
+### 통계 조회 — 참가자는 닉네임으로만 표시, 사번 미노출 (addendum H항)
+```
+GET /api/admin/stats/participation → [{ roundNo, started, finished, registered }]
+GET /api/admin/stats/items         → [{ itemCode, roundNo, level, itemType, category,
+                                        anchorCode, measureCode, n, pValue, timeoutPct, discrimination }]
+GET /api/admin/stats/matched       → [{ nickname, orgUnitName, preN, postN, prePct, postPct, gainPp }]
+GET /api/admin/stats/heatmap       → [{ orgUnitName, category, n, pct }]
+GET /api/admin/stats/prelearning   → [{ roundNo, viewed, n, avgPct }]
+GET /api/admin/short-unmatched     → [{ itemCode, roundNo, nickname, submitted, answeredAt }]
+```
+- `measureCode`/`anchorCode`/`level`은 성과분석 목적의 **관리자 전용** 데이터다. 참가자 응답 금지(규칙 2-1)는 참가자 API에 적용되는 규칙이며, `hq_admin` 인증 뒤에서는 제공한다.
+
+### `GET /api/admin/export/[kind]`
+`kind` ∈ `answers` | `scores` | `items` | `matched` | `heatmap` | `participation`. 무효 kind는 `404 NOT_FOUND`.
+- CSV: UTF-8 **BOM** + CRLF (Excel 한글 깨짐 방지). `content-disposition: attachment`.
+- ★ **사번(emp_no)은 CSV에만 포함한다**(운영자 확정, T11 — 포상·행정 대조용). 화면 API에는 싣지 않는다.
+  내려받은 파일의 보관·폐기 책임은 운영자에게 있다.
 
 ## 배치
 ```
