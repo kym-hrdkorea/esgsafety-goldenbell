@@ -242,6 +242,38 @@ export default function QuizPage({
     }
   };
 
+  // 응시 중 이탈 경고 (T03 리뷰 배정 → T07). 뒤로가기는 확정 문안으로 확인받고,
+  // 새로고침·창 닫기는 브라우저 기본 경고를 띄운다(커스텀 문안은 브라우저가 미지원).
+  // 마지막 문항 해설부터는 경고하지 않는다 — 세션은 12번째 제출로 이미 완료(D항).
+  const guardOn = !!item && !blocked && !(explain && isLast);
+  useEffect(() => {
+    if (!guardOn) return;
+    const before = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    const onPop = () => {
+      if (
+        window.confirm(
+          "진행 중인 문제가 있습니다. 나가면 이어서 풀 수 없습니다."
+        )
+      ) {
+        window.removeEventListener("beforeunload", before);
+        window.removeEventListener("popstate", onPop);
+        history.back();
+      } else {
+        history.pushState(null, "", location.href);
+      }
+    };
+    history.pushState(null, "", location.href);
+    window.addEventListener("beforeunload", before);
+    window.addEventListener("popstate", onPop);
+    return () => {
+      window.removeEventListener("beforeunload", before);
+      window.removeEventListener("popstate", onPop);
+    };
+  }, [guardOn]);
+
   if (blocked) {
     return (
       <main className="mx-auto flex min-h-[calc(100dvh-10px)] w-full max-w-[640px] flex-col items-center justify-center gap-6 px-5 text-center">
