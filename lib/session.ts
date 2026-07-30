@@ -71,3 +71,65 @@ export function clearSession(res: NextResponse): void {
     maxAge: 0,
   });
 }
+
+// ---------------------------------------------------------------------
+// 관리자 세션 (addendum G-2항): 쿠키 이름만 hq_admin으로 분리, path=/.
+// 참가자 엔드포인트는 hq_admin을, 관리자 엔드포인트는 hq_session을 절대 참조하지 않는다.
+// payload 필드(aid vs pid)가 달라 쿠키 값을 서로 옮겨 붙여도 검증에 실패한다.
+// ---------------------------------------------------------------------
+
+const ADMIN_COOKIE_NAME = "hq_admin";
+
+type AdminPayload = { aid: string; exp: number };
+
+export function issueAdminSession(res: NextResponse, adminId: string): void {
+  const payload: AdminPayload = {
+    aid: adminId,
+    exp: Date.now() + SESSION_HOURS * 3600_000,
+  };
+  const data = Buffer.from(JSON.stringify(payload)).toString("base64url");
+  res.cookies.set(ADMIN_COOKIE_NAME, `${data}.${sign(data)}`, {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+    path: "/",
+    maxAge: SESSION_HOURS * 3600,
+  });
+}
+
+export function getAdminId(req: NextRequest): string | null {
+  const raw = req.cookies.get(ADMIN_COOKIE_NAME)?.value;
+  if (!raw) return null;
+
+  const dot = raw.lastIndexOf(".");
+  if (dot < 0) return null;
+  const data = raw.slice(0, dot);
+  const sig = raw.slice(dot + 1);
+
+  const expected = sign(data);
+  const a = Buffer.from(sig);
+  const b = Buffer.from(expected);
+  if (a.length !== b.length || !timingSafeEqual(a, b)) return null;
+
+  try {
+    const payload = JSON.parse(
+      Buffer.from(data, "base64url").toString()
+    ) as AdminPayload;
+    if (typeof payload.aid !== "string" || typeof payload.exp !== "number")
+      return null;
+    if (payload.exp < Date.now()) return null;
+    return payload.aid;
+  } catch {
+    return null;
+  }
+}
+
+export function clearAdminSession(res: NextResponse): void {
+  res.cookies.set(ADMIN_COOKIE_NAME, "", {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+    path: "/",
+    maxAge: 0,
+  });
+}
