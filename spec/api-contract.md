@@ -42,7 +42,8 @@ err  401 INVALID_CREDENTIALS, 423 LOCKED { lockedUntil }
 ```
 
 ### `GET /api/rounds/[no]/prelearning`
-→ `{ roundNo, title, body }` (진입 시 열람 로그 기록)
+→ `{ roundNo, title, body, state }` (진입 시 열람 로그 기록)
+- `state`: `"open"|"closed"` — open일 때만 화면 하단에 `[이제 문제 풀기]`를 노출한다. 미개방은 `403 ROUND_NOT_OPEN`.
 
 ## 응시
 
