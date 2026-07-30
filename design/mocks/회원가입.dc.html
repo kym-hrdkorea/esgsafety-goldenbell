@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@600;700&display=swap" rel="stylesheet" />
+<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" rel="stylesheet" />
+<style>
+  html, body { margin: 0; padding: 0; background: #0b0f1d; }
+  body { -webkit-font-smoothing: antialiased; }
+  a { color: #FFD400; text-decoration: none; }
+  a:hover { color: #FFE873; }
+  button, input, select { font-family: inherit; }
+  * { scrollbar-width: none; }
+  *::-webkit-scrollbar { display: none; width: 0; height: 0; }
+</style>
+</helmet>
+<div style="min-height: 100vh; background: #0b0f1d; font-family: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', sans-serif; word-break: keep-all; color: #EDF0F7; display: flex; flex-direction: column; align-items: center; gap: 20px; padding: 24px 16px 56px;">
+
+  <div style="width: 100%; max-width: 720px; display: flex; flex-direction: column; gap: 14px;">
+    <div style="display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap;">
+      <div style="font-size: 11px; letter-spacing: 0.22em; color: #FFD400; font-weight: 700;">시안 6a · 회원가입</div>
+      <div style="font-size: 12px; color: #8B93AB;">사번 / 소속 / 부서 / 닉네임 / PIN 4자리</div>
+      <div style="flex: 1;"></div>
+      <div style="display: flex; gap: 10px; font-size: 12px; font-weight: 700;"><a href="홈.dc.html">홈 →</a><a href="응시-답변단계.dc.html">답변 단계 →</a><a href="회차결과.dc.html">회차 결과 →</a></div>
+    </div>
+    <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center; background: #131a2e; border: 2px solid #26304f; border-radius: 4px; padding: 14px;">
+      <div style="font-size: 12px; letter-spacing: 0.16em; color: #8B93AB; font-weight: 700; margin-right: 4px;">상태</div>
+      <sc-for list="{{ modeChips }}" as="chip" hint-placeholder-count="2">
+        <button type="button" onClick="{{ chip.onClick }}" style="{{ chip.style }}" style-active="transform: translate(1px, 1px);">{{ chip.label }}</button>
+      </sc-for>
+    </div>
+  </div>
+
+  <div style="width: 390px; max-width: 100%; border: 4px solid #FFD400; border-radius: 6px; background: #12172b; box-shadow: 10px 10px 0 #05070f; overflow: hidden;">
+    <div style="height: 10px; background-image: repeating-linear-gradient(45deg, #FFD400 0 8px, #12172b 8px 16px);"></div>
+
+    <div style="min-height: 792px; display: flex; flex-direction: column; background: #12172b;">
+
+      <div style="flex: 1; padding: 22px 20px 8px; display: flex; flex-direction: column; gap: 18px;">
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+          <div style="display: flex; align-items: center; gap: 9px;">
+            <div style="width: 38px; height: 38px; display: flex; align-items: center; justify-content: center; background: #C9A227; border-radius: 3px; border: 2px solid #FFE873;">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M12 3c-3.1 0-5.2 2.3-5.2 5.4v3.4L5 14.4v1.2h14v-1.2l-1.8-2.6V8.4C17.2 5.3 15.1 3 12 3z" fill="#12172b"></path><path d="M10.2 17.4a1.9 1.9 0 0 0 3.6 0h-3.6z" fill="#12172b"></path></svg>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 1px;">
+              <div style="font-size: 15px; font-weight: 800; letter-spacing: 0.02em; color: #FFD400;">HRDK 안전 골든벨 퀴즈 리그</div>
+              <div style="font-size: 13px; font-weight: 600; color: #C6CEE4; letter-spacing: 0.04em;">안전 이룸, 함께 해냄</div>
+            </div>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 4px;">
+            <h1 style="margin: 0; font-size: 24px; font-weight: 800; letter-spacing: -0.01em; color: #FFFFFF;">처음이신가요?</h1>
+            <div style="font-size: 14px; line-height: 1.6; color: #8B93AB;">사번과 소속을 입력하면 바로 시작할 수 있습니다.</div>
+          </div>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 14px;">
+          <div style="display: flex; flex-direction: column; gap: 6px;">
+            <label style="font-size: 13px; font-weight: 700; color: #C6CEE4;">사번</label>
+            <input type="text" inputMode="numeric" placeholder="사번을 입력하세요" value="20261234" style="width: 100%; box-sizing: border-box; min-height: 52px; padding: 0 14px; background: #1b2239; border: 3px solid #3a4468; border-radius: 4px; color: #FFFFFF; font-size: 16px; font-weight: 600; outline: none; font-variant-numeric: tabular-nums;" style-focus="border-color: #FFD400;" />
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+            <div style="display: flex; flex-direction: column; gap: 6px;">
+              <label style="font-size: 13px; font-weight: 700; color: #C6CEE4;">소속</label>
+              <select style="width: 100%; box-sizing: border-box; min-height: 52px; padding: 0 10px; background: #1b2239; border: 3px solid #3a4468; border-radius: 4px; color: #FFFFFF; font-size: 15px; font-weight: 600; outline: none; appearance: none; background-image: url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2212%22 height=%228%22><path d=%22M1 1l5 5 5-5%22 stroke=%22%23FFD400%22 stroke-width=%222.4%22 fill=%22none%22/></svg>'); background-repeat: no-repeat; background-position: right 12px center;" style-focus="border-color: #FFD400;">
+                <option>서울지역본부</option><option>부산지역본부</option><option>경기지사</option><option>본부</option>
+              </select>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 6px;">
+              <label style="font-size: 13px; font-weight: 700; color: #C6CEE4;">부서</label>
+              <select style="width: 100%; box-sizing: border-box; min-height: 52px; padding: 0 10px; background: #1b2239; border: 3px solid #3a4468; border-radius: 4px; color: #FFFFFF; font-size: 15px; font-weight: 600; outline: none; appearance: none; background-image: url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2212%22 height=%228%22><path d=%22M1 1l5 5 5-5%22 stroke=%22%23FFD400%22 stroke-width=%222.4%22 fill=%22none%22/></svg>'); background-repeat: no-repeat; background-position: right 12px center;" style-focus="border-color: #FFD400;">
+                <option>안전보건팀</option><option>능력개발팀</option><option>자격시험팀</option><option>경영지원팀</option>
+              </select>
+            </div>
+          </div>
+
+          <div style="display: flex; flex-direction: column; gap: 6px;">
+            <label style="font-size: 13px; font-weight: 700; color: #C6CEE4;">닉네임</label>
+            <input type="text" placeholder="순위표에 표시될 이름" value="한걸음" style="{{ nickStyle }}" style-focus="border-color: #FFD400;" />
+            <sc-if value="{{ err }}" hint-placeholder-val="{{ false }}">
+              <div style="display: flex; align-items: center; gap: 5px; font-size: 13px; font-weight: 700; color: #F0A099;"><span style="font-weight: 900;">✕</span>이미 사용 중인 닉네임입니다.</div>
+            </sc-if>
+            <div style="font-size: 13px; line-height: 1.6; color: #8B93AB;">닉네임은 순위표에 표시되며, 가입 후 변경할 수 없습니다.</div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+            <div style="display: flex; flex-direction: column; gap: 6px;">
+              <label style="font-size: 13px; font-weight: 700; color: #C6CEE4;">비밀번호 4자리</label>
+              <input type="password" inputMode="numeric" maxLength="4" placeholder="숫자 4자리" value="1234" style="width: 100%; box-sizing: border-box; min-height: 52px; padding: 0 14px; background: #1b2239; border: 3px solid #3a4468; border-radius: 4px; color: #FFFFFF; font-size: 16px; letter-spacing: 0.3em; outline: none;" style-focus="border-color: #FFD400;" />
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 6px;">
+              <label style="font-size: 13px; font-weight: 700; color: #C6CEE4;">비밀번호 확인</label>
+              <input type="password" inputMode="numeric" maxLength="4" placeholder="숫자 4자리" value="1235" style="{{ pinStyle }}" style-focus="border-color: #FFD400;" />
+            </div>
+          </div>
+          <sc-if value="{{ err }}" hint-placeholder-val="{{ false }}">
+            <div style="display: flex; align-items: center; gap: 5px; font-size: 13px; font-weight: 700; color: #F0A099; margin-top: -8px;"><span style="font-weight: 900;">✕</span>비밀번호가 일치하지 않습니다.</div>
+          </sc-if>
+        </div>
+      </div>
+
+      <div style="padding: 10px 20px 18px; display: flex; flex-direction: column; gap: 12px;">
+        <div style="display: flex; align-items: center; gap: 6px; font-size: 13px; color: #8B93AB;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><rect x="5" y="10.5" width="14" height="9" rx="1.5" stroke="currentColor" stroke-width="2.2"></rect><path d="M8.5 10V8a3.5 3.5 0 0 1 7 0v2" stroke="currentColor" stroke-width="2.2"></path></svg>
+          <span>이름과 이메일은 수집하지 않습니다.</span>
+        </div>
+        <button type="button" style="width: 100%; min-height: 56px; border-radius: 4px; background: #FFD400; border: 3px solid #FFE873; box-shadow: 5px 5px 0 #6B5200; color: #12172b; font-size: 18px; font-weight: 800; letter-spacing: 0.02em; cursor: pointer;" style-active="transform: translate(4px, 4px); box-shadow: 1px 1px 0 rgba(0,0,0,0.6);">가입하고 시작하기</button>
+        <div style="text-align: center; font-size: 14px; color: #8B93AB;">이미 가입하셨나요? <a href="#" style="font-weight: 700; text-decoration: underline; text-underline-offset: 3px;">로그인</a></div>
+      </div>
+    </div>
+  </div>
+
+  <div style="width: 390px; max-width: 100%; font-size: 13px; line-height: 1.7; color: #8B93AB;">{{ note }}</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:760,&quot;height&quot;:1120}}">
+class Component extends DCLogic {
+  state = { err: false };
+
+  renderVals() {
+    const err = this.state.err;
+    const base = 'width:100%;box-sizing:border-box;min-height:52px;padding:0 14px;background:#1b2239;border-radius:4px;color:#FFFFFF;font-size:16px;font-weight:600;outline:none;border:3px solid ';
+    return {
+      err,
+      modeChips: [
+        { key: false, label: '기본' },
+        { key: true, label: '오류 상태' }
+      ].map(m => ({
+        label: m.label,
+        onClick: () => this.setState({ err: m.key }),
+        style: 'min-height:34px;padding:0 12px;border-radius:3px;font-weight:700;font-size:13px;cursor:pointer;border:2px solid ' +
+          (err === m.key ? '#FFD400;background:#FFD400;color:#12172b;' : '#2f3a5e;background:#0f1425;color:#9AA4C2;')
+      })),
+      nickStyle: base + (err ? '#E23A2E;' : '#3a4468;'),
+      pinStyle: base + 'letter-spacing:0.3em;' + (err ? 'border-color:#E23A2E;' : 'border-color:#3a4468;'),
+      note: err
+        ? '오류는 필드 테두리(레드) + ✕ 아이콘 + 문안으로 표시합니다. 오류 문안은 copy.md 그대로입니다.'
+        : '한 화면에 모든 필드가 들어갑니다. 소속·부서는 선택형, 비밀번호는 숫자 4자리 PIN입니다.'
+    };
+  }
+}
+</script>
+</body>
+</html>

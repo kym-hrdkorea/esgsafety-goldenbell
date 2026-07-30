@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@600;700&display=swap" rel="stylesheet" />
+<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" rel="stylesheet" />
+<style>
+  html, body { margin: 0; padding: 0; background: #0b0f1d; }
+  body { -webkit-font-smoothing: antialiased; }
+  a { color: #FFD400; text-decoration: none; }
+  a:hover { color: #FFE873; }
+  button { font-family: inherit; }
+  * { scrollbar-width: none; }
+  *::-webkit-scrollbar { display: none; width: 0; height: 0; }
+</style>
+</helmet>
+<div style="min-height: 100vh; background: #0b0f1d; font-family: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', sans-serif; word-break: keep-all; color: #EDF0F7; display: flex; flex-direction: column; align-items: center; gap: 20px; padding: 24px 16px 56px;">
+
+  <div style="width: 100%; max-width: 720px; display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap;">
+    <div style="font-size: 11px; letter-spacing: 0.22em; color: #FFD400; font-weight: 700;">시안 11a · 관리자</div>
+    <div style="font-size: 12px; color: #8B93AB;">운영자 전용 · 참가자는 닉네임으로만 표시</div>
+    <div style="flex: 1;"></div>
+    <div style="display: flex; gap: 10px; font-size: 12px; font-weight: 700;"><a href="홈.dc.html">← 홈</a><a href="대시보드.dc.html">대시보드 →</a></div>
+  </div>
+
+  <div style="width: 390px; max-width: 100%; border: 4px solid #FFD400; border-radius: 6px; background: #12172b; box-shadow: 10px 10px 0 #05070f; overflow: hidden;">
+    <div style="height: 10px; background-image: repeating-linear-gradient(45deg, #FFD400 0 8px, #12172b 8px 16px);"></div>
+
+    <div style="min-height: 792px; display: flex; flex-direction: column; background: #12172b;">
+
+      <div style="flex: 1; padding: 18px 16px 16px; display: flex; flex-direction: column; gap: 18px;">
+        <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 10px;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <h1 style="margin: 0; font-size: 24px; font-weight: 800; letter-spacing: -0.01em; color: #FFFFFF;">관리자</h1>
+            <span style="font-size: 11px; font-weight: 800; letter-spacing: 0.08em; color: #12172b; background: #E23A2E; padding: 3px 7px; border-radius: 2px; color: #fff;">ADMIN</span>
+          </div>
+          <div style="font-size: 12px; color: #8B93AB; font-variant-numeric: tabular-nums;">07.30 14:00 기준</div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;">
+          <div style="background: #161d33; border: 3px solid #3a4468; border-radius: 4px; box-shadow: 4px 4px 0 #070a16; padding: 10px 12px; display: flex; flex-direction: column; gap: 3px;">
+            <div style="font-size: 12px; font-weight: 700; color: #8B93AB;">가입자</div>
+            <div style="display: flex; align-items: baseline; gap: 2px;"><span style="font-family: 'Chakra Petch', ui-monospace, monospace; font-variant-numeric: tabular-nums; font-weight: 700; font-size: 22px; color: #EDF0F7;">1,486</span><span style="font-size: 11px; color: #5E6A8C;">/1,800</span></div>
+          </div>
+          <div style="background: #161d33; border: 3px solid #3a4468; border-radius: 4px; box-shadow: 4px 4px 0 #070a16; padding: 10px 12px; display: flex; flex-direction: column; gap: 3px;">
+            <div style="font-size: 12px; font-weight: 700; color: #8B93AB;">3회차 참여</div>
+            <div style="display: flex; align-items: baseline; gap: 2px;"><span style="font-family: 'Chakra Petch', ui-monospace, monospace; font-variant-numeric: tabular-nums; font-weight: 700; font-size: 22px; color: #FFD400;">1,214</span><span style="font-size: 11px; color: #5E6A8C;">명</span></div>
+          </div>
+          <div style="background: #161d33; border: 3px solid #3a4468; border-radius: 4px; box-shadow: 4px 4px 0 #070a16; padding: 10px 12px; display: flex; flex-direction: column; gap: 3px;">
+            <div style="font-size: 12px; font-weight: 700; color: #8B93AB;">3회차 만점</div>
+            <div style="display: flex; align-items: baseline; gap: 2px;"><span style="font-family: 'Chakra Petch', ui-monospace, monospace; font-variant-numeric: tabular-nums; font-weight: 700; font-size: 22px; color: #C9A227;">89</span><span style="font-size: 11px; color: #5E6A8C;">명</span></div>
+          </div>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <div style="width: 4px; height: 14px; background: #FFD400;"></div>
+            <div style="font-size: 14px; font-weight: 800; color: #C6CEE4;">회차 관리</div>
+          </div>
+          <div style="border: 3px solid #262f4d; border-radius: 4px; overflow: hidden;">
+            <sc-for list="{{ rounds }}" as="r" hint-placeholder-count="8">
+              <div style="display: flex; align-items: center; gap: 10px; padding: 11px 12px; border-top: 2px solid #1d2440; background: #12172b;">
+                <span style="font-family: 'Chakra Petch', ui-monospace, monospace; font-weight: 700; font-size: 13px; color: #8B93AB; width: 30px;">{{ r.no }}</span>
+                <span style="flex: 1; font-size: 14px; font-weight: 700; color: #EDF0F7; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ r.label }}</span>
+                <span style="font-size: 12px; color: #8B93AB; font-variant-numeric: tabular-nums;">{{ r.date }}</span>
+                <span style="{{ r.chipStyle }}">{{ r.status }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <div style="width: 4px; height: 14px; background: #5E6A8C;"></div>
+            <div style="font-size: 14px; font-weight: 800; color: #C6CEE4;">참여 현황 요약</div>
+          </div>
+          <div style="border: 3px solid #262f4d; border-radius: 4px; padding: 14px; display: flex; flex-direction: column; gap: 12px;">
+            <sc-for list="{{ stats }}" as="st" hint-placeholder-count="3">
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <span style="width: 92px; font-size: 13px; font-weight: 700; color: #C6CEE4;">{{ st.label }}</span>
+                <div style="flex: 1; position: relative; height: 12px; background: #232b47; border-radius: 2px; overflow: hidden;">
+                  <div style="{{ st.fillStyle }}"></div>
+                </div>
+                <span style="width: 46px; text-align: right; font-family: 'Chakra Petch', ui-monospace, monospace; font-variant-numeric: tabular-nums; font-weight: 700; font-size: 15px; color: #FFD400;">{{ st.pct }}%</span>
+              </div>
+            </sc-for>
+            <div style="font-size: 12px; color: #8B93AB;">부서별 상세는 순위 대시보드의 부서 탭과 동일한 집계를 사용합니다.</div>
+          </div>
+        </div>
+
+        <div style="display: flex; align-items: flex-start; gap: 8px; padding: 12px 13px; background: #161d33; border: 2px solid #26304f; border-radius: 4px;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" style="flex: 0 0 auto; margin-top: 2px;"><rect x="5" y="10.5" width="14" height="9" rx="1.5" stroke="#8B93AB" stroke-width="2.2"></rect><path d="M8.5 10V8a3.5 3.5 0 0 1 7 0v2" stroke="#8B93AB" stroke-width="2.2"></path></svg>
+          <div style="font-size: 13px; line-height: 1.6; color: #8B93AB;">개인정보 보호를 위해 참가자는 닉네임으로만 표시됩니다. 실명·사번은 관리자 화면에도 노출되지 않습니다.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:760,&quot;height&quot;:1120}}">
+const ROUNDS = [
+  { no: 1, label: '심폐소생술', date: '06.15', status: '종료' },
+  { no: 2, label: '밀폐공간 작업', date: '06.22', status: '종료' },
+  { no: 3, label: '온열질환', date: '07.27', status: '진행 중' },
+  { no: 4, label: '추락·낙하 예방', date: '08.03', status: '대기' },
+  { no: 5, label: '전기 안전', date: '08.10', status: '대기' },
+  { no: 6, label: '화학물질 취급', date: '08.17', status: '대기' },
+  { no: 7, label: '겨울철 안전', date: '08.24', status: '대기' },
+  { no: 8, label: '종합', date: '08.31', status: '대기' }
+];
+const STATS = [
+  { label: '1회차 참여율', pct: 61 },
+  { label: '2회차 참여율', pct: 64 },
+  { label: '3회차 참여율', pct: 67 }
+];
+
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      rounds: ROUNDS.map(r => ({
+        no: String(r.no).padStart(2, '0'),
+        label: r.label, date: r.date, status: r.status,
+        chipStyle: 'font-size:12px;font-weight:800;padding:3px 8px;border-radius:2px;width:52px;text-align:center;box-sizing:border-box;' +
+          (r.status === '진행 중' ? 'background:#FFD400;color:#12172b;'
+            : r.status === '종료' ? 'background:#1b2136;border:2px solid #5E6A8C;color:#C6CEE4;'
+            : 'background:transparent;border:2px solid #2f3a5e;color:#5E6A8C;')
+      })),
+      stats: STATS.map(s => ({
+        label: s.label, pct: String(s.pct),
+        fillStyle: 'position:absolute;top:0;left:0;bottom:0;width:' + s.pct + '%;background:#FFD400;'
+      }))
+    };
+  }
+}
+</script>
+</body>
+</html>

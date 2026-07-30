@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@600;700&display=swap" rel="stylesheet" />
+<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" rel="stylesheet" />
+<style>
+  html, body { margin: 0; padding: 0; background: #0b0f1d; }
+  body { -webkit-font-smoothing: antialiased; }
+  a { color: #FFD400; text-decoration: none; }
+  a:hover { color: #FFE873; }
+  button { font-family: inherit; }
+  * { scrollbar-width: none; }
+  *::-webkit-scrollbar { display: none; width: 0; height: 0; }
+  @keyframes bell-swing { 0% { transform: rotate(0deg); } 15% { transform: rotate(-16deg); } 35% { transform: rotate(13deg); } 55% { transform: rotate(-8deg); } 75% { transform: rotate(4deg); } 100% { transform: rotate(0deg); } }
+  @keyframes ring-out { from { transform: scale(0.55); opacity: 0.9; } to { transform: scale(1.5); opacity: 0; } }
+  @keyframes rise-in { from { transform: translateY(8px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+</style>
+</helmet>
+<div style="min-height: 100vh; background: #0b0f1d; font-family: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', sans-serif; word-break: keep-all; color: #EDF0F7; display: flex; flex-direction: column; align-items: center; gap: 20px; padding: 24px 16px 56px;">
+
+  <div style="width: 100%; max-width: 720px; display: flex; flex-direction: column; gap: 14px;">
+    <div style="display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap;">
+      <div style="font-size: 11px; letter-spacing: 0.22em; color: #FFD400; font-weight: 700;">시안 5a · 회차 결과</div>
+      <div style="font-size: 12px; color: #8B93AB;">만점(골든벨) / 일반 2가지 상태</div>
+      <div style="flex: 1;"></div>
+      <div style="display: flex; gap: 10px; font-size: 12px; font-weight: 700;"><a href="응시-해설단계.dc.html">← 해설 단계</a><a href="대시보드.dc.html">대시보드 →</a><a href="홈.dc.html">홈 →</a><a href="회원가입.dc.html">회원가입 →</a></div>
+    </div>
+    <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center; background: #131a2e; border: 2px solid #26304f; border-radius: 4px; padding: 14px;">
+      <div style="font-size: 12px; letter-spacing: 0.16em; color: #8B93AB; font-weight: 700; margin-right: 4px;">상태</div>
+      <sc-for list="{{ modeChips }}" as="chip" hint-placeholder-count="2">
+        <button type="button" onClick="{{ chip.onClick }}" style="{{ chip.style }}" style-active="transform: translate(1px, 1px);">{{ chip.label }}</button>
+      </sc-for>
+    </div>
+  </div>
+
+  <div style="width: 390px; max-width: 100%; border: 4px solid #FFD400; border-radius: 6px; background: #12172b; box-shadow: 10px 10px 0 #05070f; overflow: hidden;">
+    <div style="height: 10px; background-image: repeating-linear-gradient(45deg, #FFD400 0 8px, #12172b 8px 16px);"></div>
+
+    <div style="min-height: 792px; display: flex; flex-direction: column; background: #12172b;">
+
+      <div style="flex: 1; padding: 18px 16px 8px; display: flex; flex-direction: column; gap: 18px;">
+        <h1 style="margin: 0; font-size: 24px; font-weight: 800; letter-spacing: -0.01em; color: #FFFFFF;">3회차 결과</h1>
+
+        <sc-if value="{{ perfect }}" hint-placeholder-val="{{ true }}">
+          <div style="border: 3px solid #C9A227; border-radius: 4px; box-shadow: 5px 5px 0 #070a16; background: #1d1a2c; padding: 22px 16px 20px; display: flex; flex-direction: column; align-items: center; gap: 12px; animation: rise-in 0.25s ease-out;">
+            <div style="position: relative; width: 74px; height: 74px;">
+              <span style="position: absolute; inset: 0; border: 2px solid #C9A227; border-radius: 50%; animation: ring-out 1s ease-out 0.2s both;"></span>
+              <span style="position: absolute; inset: 0; border: 2px solid #FFD400; border-radius: 50%; animation: ring-out 1.35s ease-out 0.4s both;"></span>
+              <span style="position: absolute; inset: 0; border: 2px solid #FFE873; border-radius: 50%; animation: ring-out 1.7s ease-out 0.6s both;"></span>
+              <div style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: #C9A227; border-radius: 50%; border: 3px solid #FFE873;">
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" style="animation: bell-swing 1.4s ease-in-out 0.2s both; transform-origin: 50% 10%;"><path d="M12 3c-3.1 0-5.2 2.3-5.2 5.4v3.4L5 14.4v1.2h14v-1.2l-1.8-2.6V8.4C17.2 5.3 15.1 3 12 3z" fill="#12172b"></path><path d="M10.2 17.4a1.9 1.9 0 0 0 3.6 0h-3.6z" fill="#12172b"></path></svg>
+              </div>
+            </div>
+            <div style="display: flex; align-items: baseline; gap: 6px; font-family: 'Chakra Petch', ui-monospace, monospace; font-variant-numeric: tabular-nums; font-weight: 700;">
+              <span style="font-size: 56px; line-height: 1; color: #FFD400;">{{ shownScore }}</span>
+              <span style="font-size: 24px; color: #8B93AB;">/ 12</span>
+            </div>
+            <div style="display: flex; gap: 8px;">
+              <span style="font-size: 13px; font-weight: 700; color: #12172b; background: #C9A227; padding: 4px 10px; border-radius: 2px; font-variant-numeric: tabular-nums;">정답률 100%</span>
+              <span style="font-size: 13px; font-weight: 700; color: #C9A227; border: 2px solid #C9A227; padding: 2px 8px; border-radius: 2px; font-variant-numeric: tabular-nums;">이번 회차 1위</span>
+            </div>
+            <div style="font-size: 15px; font-weight: 700; color: #FFE873;">만점입니다. 다음 회차도 기대할게요.</div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ normal }}" hint-placeholder-val="{{ false }}">
+          <div style="border: 3px solid #3a4468; border-radius: 4px; box-shadow: 5px 5px 0 #070a16; background: #161d33; padding: 22px 16px 20px; display: flex; flex-direction: column; align-items: center; gap: 12px; animation: rise-in 0.25s ease-out;">
+            <div style="display: flex; align-items: baseline; gap: 6px; font-family: 'Chakra Petch', ui-monospace, monospace; font-variant-numeric: tabular-nums; font-weight: 700;">
+              <span style="font-size: 56px; line-height: 1; color: #FFD400;">{{ shownScore }}</span>
+              <span style="font-size: 24px; color: #8B93AB;">/ 12</span>
+            </div>
+            <div style="display: flex; gap: 8px;">
+              <span style="font-size: 13px; font-weight: 700; color: #C6CEE4; border: 2px solid #3a4468; padding: 2px 8px; border-radius: 2px; font-variant-numeric: tabular-nums;">정답률 83%</span>
+              <span style="font-size: 13px; font-weight: 700; color: #C6CEE4; border: 2px solid #3a4468; padding: 2px 8px; border-radius: 2px; font-variant-numeric: tabular-nums;">이번 회차 214위</span>
+            </div>
+            <div style="font-size: 14px; color: #8B93AB;">틀린 문제의 해설을 한 번 더 읽어보세요.</div>
+          </div>
+        </sc-if>
+
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <div style="width: 4px; height: 14px; background: #FFD400;"></div>
+            <div style="font-size: 14px; font-weight: 800; color: #C6CEE4;">문항별 결과</div>
+            <div style="flex: 1;"></div>
+            <sc-if value="{{ normal }}" hint-placeholder-val="{{ false }}">
+              <button type="button" onClick="{{ toggleWrong }}" style="{{ wrongBtnStyle }}" style-active="transform: translate(1px, 1px);">틀린 문제만 보기</button>
+            </sc-if>
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;">
+            <sc-for list="{{ cells }}" as="c" hint-placeholder-count="12">
+              <div style="{{ c.style }}">
+                <span style="font-family: 'Chakra Petch', ui-monospace, monospace; font-variant-numeric: tabular-nums; font-weight: 700; font-size: 15px;">{{ c.no }}</span>
+                <span style="{{ c.iconStyle }}">{{ c.icon }}</span>
+              </div>
+            </sc-for>
+          </div>
+          <div style="display: flex; gap: 12px; font-size: 12px; color: #8B93AB; font-weight: 700;">
+            <span style="display: flex; align-items: center; gap: 4px;"><span style="color: #7CE09A; font-weight: 900;">✓</span>정답</span>
+            <span style="display: flex; align-items: center; gap: 4px;"><span style="color: #F0A099; font-weight: 900;">✕</span>오답</span>
+            <span style="display: flex; align-items: center; gap: 4px;"><span style="color: #8B93AB; font-weight: 900;">◷</span>시간초과</span>
+          </div>
+        </div>
+      </div>
+
+      <div style="padding: 10px 16px 16px; display: flex; flex-direction: column; gap: 8px;">
+        <a href="대시보드.dc.html" style="display: flex; align-items: center; justify-content: center; min-height: 56px; border-radius: 4px; background: #FFD400; border: 3px solid #FFE873; box-shadow: 5px 5px 0 #6B5200; color: #12172b; font-size: 18px; font-weight: 800; letter-spacing: 0.02em;" style-active="transform: translate(4px, 4px); box-shadow: 1px 1px 0 rgba(0,0,0,0.6);">순위 보러 가기</a>
+        <a href="홈.dc.html" style="display: flex; align-items: center; justify-content: center; min-height: 48px; border-radius: 4px; background: transparent; border: 2px solid #3a4468; color: #C6CEE4; font-size: 15px; font-weight: 700;" style-active="transform: translate(1px, 1px);">홈으로</a>
+      </div>
+    </div>
+  </div>
+
+  <div style="width: 390px; max-width: 100%; font-size: 13px; line-height: 1.7; color: #8B93AB;">{{ note }}</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:760,&quot;height&quot;:1120}}">
+const RESULTS = {
+  perfect: Array.from({ length: 12 }, () => 'ok'),
+  normal: Array.from({ length: 12 }, (_, i) => (i === 4 ? 'wrong' : i === 10 ? 'timeout' : 'ok'))
+};
+const NUM = "'Chakra Petch', ui-monospace, monospace";
+
+class Component extends DCLogic {
+  state = { mode: 'perfect', shown: 0, wrongOnly: false };
+
+  componentDidMount() { this.rollup(); }
+  componentWillUnmount() { clearInterval(this.t); }
+
+  rollup() {
+    clearInterval(this.t);
+    const target = this.state.mode === 'perfect' ? 12 : 10;
+    this.setState({ shown: 0 });
+    this.t = setInterval(() => {
+      this.setState(s => {
+        if (s.shown >= target) { clearInterval(this.t); return {}; }
+        return { shown: s.shown + 1 };
+      });
+    }, 90);
+  }
+
+  setMode(m) { this.setState({ mode: m, wrongOnly: false }, () => this.rollup()); }
+
+  renderVals() {
+    const s = this.state, perfect = s.mode === 'perfect';
+    const res = RESULTS[s.mode];
+
+    const modeChips = [
+      { key: 'perfect', label: '만점 12/12' },
+      { key: 'normal', label: '일반 10/12' }
+    ].map(m => ({
+      label: m.label,
+      onClick: () => this.setMode(m.key),
+      style: 'min-height:34px;padding:0 12px;border-radius:3px;font-weight:700;font-size:13px;cursor:pointer;border:2px solid ' +
+        (s.mode === m.key ? '#FFD400;background:#FFD400;color:#12172b;' : '#2f3a5e;background:#0f1425;color:#9AA4C2;')
+    }));
+
+    const cells = res.map((r, i) => ({ r, no: String(i + 1).padStart(2, '0') }))
+      .filter(c => !s.wrongOnly || c.r !== 'ok')
+      .map(c => ({
+        no: c.no,
+        icon: c.r === 'ok' ? '✓' : c.r === 'wrong' ? '✕' : '◷',
+        iconStyle: 'font-weight:900;font-size:16px;color:' + (c.r === 'ok' ? '#7CE09A' : c.r === 'wrong' ? '#F0A099' : '#8B93AB') + ';',
+        style: 'display:flex;align-items:center;justify-content:center;gap:6px;min-height:48px;border-radius:3px;' +
+          (c.r === 'ok'
+            ? 'background:#12261a;border:2px solid #1d5c33;color:#7CE09A;'
+            : c.r === 'wrong'
+              ? 'background:#2a171a;border:2px solid #E23A2E;color:#F0A099;'
+              : 'background:#1b2136;border:2px solid #5E6A8C;color:#C6CEE4;')
+      }));
+
+    return {
+      perfect, normal: !perfect,
+      shownScore: String(s.shown),
+      modeChips, cells,
+      toggleWrong: () => this.setState(st => ({ wrongOnly: !st.wrongOnly })),
+      wrongBtnStyle: 'min-height:36px;padding:0 12px;border-radius:3px;font-size:13px;font-weight:700;cursor:pointer;border:2px solid ' +
+        (s.wrongOnly ? '#FFD400;background:#FFD400;color:#12172b;' : '#3a4468;background:transparent;color:#C6CEE4;'),
+      note: perfect
+        ? '만점은 이 앱의 최고 보상 순간 — 종이 울리는 3중 링 연출과 브라스 골드 패널, 점수 롤업 카운터가 재생됩니다.'
+        : '일반 결과는 담담한 톤으로. 점수 롤업만 유지하고, 틀린 문제만 보기 토글로 5·11번을 확인할 수 있습니다.'
+    };
+  }
+}
+</script>
+</body>
+</html>

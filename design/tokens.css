@@ -1,0 +1,97 @@
+/* 안전 골든벨 퀴즈 리그 — Design Tokens
+   HTML 목업에서 추출한 확정 값. 프로젝트의 토큰 시스템(CSS vars / Tailwind config / theme 객체)으로 이식하세요. */
+
+:root {
+  /* ── Color: Surface ── */
+  --gb-bg-page: #0b0f1d;        /* 최외곽 배경 */
+  --gb-bg-screen: #12172b;      /* 화면(캐비닛) 배경 */
+  --gb-bg-panel: #161d33;       /* 헤더/푸터/패널 */
+  --gb-bg-card: #1b2239;        /* 선택지 카드, 입력 필드 */
+  --gb-bg-highlight: #1c2138;   /* 내 행, 이번 주 카드 */
+  --gb-bg-block: #232b47;       /* 비활성 게이지 칸, 비활성 버튼 */
+  --gb-bg-gold-tint: #1d1a2c;   /* 만점 패널 배경 */
+
+  /* ── Color: Border ── */
+  --gb-border-divider: #262f4d; /* 섹션 구분 3px */
+  --gb-border-card: #3a4468;    /* 카드 기본 3px */
+  --gb-border-chip: #2f3a5e;    /* 칩/보조 2px */
+  --gb-border-row: #1d2440;     /* 표 행 구분 2px */
+
+  /* ── Color: Brand ── */
+  --gb-yellow: #FFD400;         /* 세이프티 옐로 = 주색. 주 CTA, 타이머, 현재 진행, 선택 상태 */
+  --gb-yellow-light: #FFE873;   /* 옐로 요소의 밝은 테두리 */
+  --gb-yellow-shadow: #6B5200;  /* 옐로 버튼의 하드 섀도 */
+  --gb-gold: #C9A227;           /* 브라스 골드 = 성취 전용. 만점·1위·완료 배지·종 */
+
+  /* ── Color: Semantic ── */
+  --gb-green: #24B24C;          /* 정답 (안전보건표지 안내색) */
+  --gb-green-text: #7CE09A;
+  --gb-green-bg: #12261a;
+  --gb-green-border-dim: #1d5c33;
+  --gb-red: #E23A2E;            /* 오답·경고. 최소 사용 */
+  --gb-red-text: #F0A099;
+  --gb-red-bg: #2a171a;
+
+  /* ── Color: Text ── */
+  --gb-text-primary: #EDF0F7;   /* 문항 본문 #FFFFFF도 허용(제목) */
+  --gb-text-body: #C9D2E8;      /* 해설 본문 */
+  --gb-text-strong-sub: #C6CEE4;/* 라벨, 섹션 제목 */
+  --gb-text-secondary: #8B93AB; /* 캡션, 안내문 (최소 크기 13px) */
+  --gb-text-dim: #5E6A8C;       /* 비활성. 본문에 사용 금지 */
+
+  /* ── Shadow: blur 없는 offset 전용 ── */
+  --gb-shadow-card: 4px 4px 0 #070a16;
+  --gb-shadow-cta: 5px 5px 0 var(--gb-yellow-shadow);
+  --gb-shadow-frame: 10px 10px 0 #05070f;
+  --gb-shadow-pressed: 1px 1px 0 rgba(0,0,0,0.6);
+
+  /* ── Typography ── */
+  /* 한글 본문: 픽셀/도트 폰트 절대 금지 */
+  --gb-font-kr: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont,
+                'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', sans-serif;
+  /* 숫자 전용(점수·타이머·순위·진행률): 등폭 + 두꺼운 웨이트가 아케이드 감각 담당 */
+  --gb-font-num: 'Chakra Petch', ui-monospace, 'SF Mono', monospace;
+  /* 숫자에는 항상: font-variant-numeric: tabular-nums; font-weight: 600~700 */
+
+  --gb-fs-stem: 22px;           /* 문항 본문 / lh 1.52 / 700 */
+  --gb-fs-option: 17px;         /* 선택지 / lh 1.5 / 선택 700, 기본 500 */
+  --gb-fs-explain: 16px;        /* 해설 / lh 1.65 */
+  --gb-fs-section: 14px;        /* 섹션 라벨 / 800 */
+  --gb-fs-caption: 13px;        /* 캡션·안내문 최소 크기 */
+  --gb-fs-num-hero: 56px;       /* 결과 점수 */
+  --gb-fs-num-timer: 26px;      /* 타이머 초 */
+  --gb-fs-num-progress: 22px;   /* 진행 n/12 */
+
+  /* ── Radius: 각진 코너 유지 ── */
+  --gb-radius-badge: 2px;
+  --gb-radius-chip: 3px;
+  --gb-radius-card: 4px;
+  --gb-radius-frame: 6px;
+
+  /* ── Spacing (4px 그리드) ── */
+  --gb-space-2: 8px;   /* 칩 간격, 그리드 갭 */
+  --gb-space-3: 12px;  /* 카드 내부 요소 */
+  --gb-space-4: 16px;  /* 화면 좌우 패딩, 섹션 간 */
+  --gb-space-5: 20px;  /* 큰 섹션 간 */
+
+  /* ── Size ── */
+  --gb-touch-min: 48px;         /* 모든 터치 타겟 최소 */
+  --gb-cta-height: 56px;        /* 하단 고정 주 CTA */
+  --gb-input-height: 52px;
+  --gb-content-max: 640px;      /* 데스크톱 중앙 정렬 최대 폭 */
+}
+
+/* ── Pattern: 해저드 스트라이프 (노랑/검정 45°) ──
+   용도: 화면 상단 액센트 스트립(10px), 타이머 임박 게이지, 이번 주 카드 액센트(8px) */
+.gb-hazard {
+  background-image: repeating-linear-gradient(45deg, var(--gb-yellow) 0 8px, var(--gb-bg-screen) 8px 16px);
+}
+
+/* ── Motion ── */
+/* 버튼 눌림(즉시, transition 없음): active 시 translate(3~4px,3~4px) + shadow → --gb-shadow-pressed */
+/* 타이머 게이지: width를 1초 linear transition으로 감소 (45s → 0) */
+@keyframes gb-hz-slide { from { background-position: 0 0; } to { background-position: 32px 0; } }  /* 임박 게이지 1s linear infinite */
+@keyframes gb-hz-shake { 0%,100% { transform: translateX(0); } 25% { transform: translateX(-1.5px); } 75% { transform: translateX(1.5px); } }  /* 타이머 칩 0.5s infinite */
+@keyframes gb-ring-out { from { transform: scale(0.55); opacity: 0.9; } to { transform: scale(1.45); opacity: 0; } }  /* 정답 링 0.8~1.7s ease-out, 1회 */
+@keyframes gb-bell-swing { 0% { transform: rotate(0); } 20% { transform: rotate(-14deg); } 45% { transform: rotate(11deg); } 70% { transform: rotate(-5deg); } 100% { transform: rotate(0); } }  /* transform-origin: 50% 10% */
+@keyframes gb-rise-in { from { transform: translateY(8px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }  /* 배너 등장 250ms */

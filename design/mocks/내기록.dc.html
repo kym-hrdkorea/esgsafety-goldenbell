@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@600;700&display=swap" rel="stylesheet" />
+<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" rel="stylesheet" />
+<style>
+  html, body { margin: 0; padding: 0; background: #0b0f1d; }
+  body { -webkit-font-smoothing: antialiased; }
+  a { color: #FFD400; text-decoration: none; }
+  a:hover { color: #FFE873; }
+  button { font-family: inherit; }
+  * { scrollbar-width: none; }
+  *::-webkit-scrollbar { display: none; width: 0; height: 0; }
+</style>
+</helmet>
+<div style="min-height: 100vh; background: #0b0f1d; font-family: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', sans-serif; word-break: keep-all; color: #EDF0F7; display: flex; flex-direction: column; align-items: center; gap: 20px; padding: 24px 16px 56px;">
+
+  <div style="width: 100%; max-width: 720px; display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap;">
+    <div style="font-size: 11px; letter-spacing: 0.22em; color: #FFD400; font-weight: 700;">시안 10a · 내 기록</div>
+    <div style="font-size: 12px; color: #8B93AB;">회차별 점수 + 영역별 정답률 + 사전학습 열람</div>
+    <div style="flex: 1;"></div>
+    <div style="display: flex; gap: 10px; font-size: 12px; font-weight: 700;"><a href="홈.dc.html">← 홈</a><a href="대시보드.dc.html">대시보드 →</a><a href="복습.dc.html">복습 →</a></div>
+  </div>
+
+  <div style="width: 390px; max-width: 100%; border: 4px solid #FFD400; border-radius: 6px; background: #12172b; box-shadow: 10px 10px 0 #05070f; overflow: hidden;">
+    <div style="height: 10px; background-image: repeating-linear-gradient(45deg, #FFD400 0 8px, #12172b 8px 16px);"></div>
+
+    <div style="min-height: 792px; display: flex; flex-direction: column; background: #12172b;">
+
+      <div style="flex: 1; padding: 18px 16px 8px; display: flex; flex-direction: column; gap: 20px;">
+        <div style="display: flex; flex-direction: column; gap: 2px;">
+          <h1 style="margin: 0; font-size: 24px; font-weight: 800; letter-spacing: -0.01em; color: #FFFFFF;">내 기록</h1>
+          <div style="font-size: 13px; color: #8B93AB;">한걸음 · 서울지역본부 안전보건팀</div>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <div style="width: 4px; height: 14px; background: #FFD400;"></div>
+            <div style="font-size: 14px; font-weight: 800; color: #C6CEE4;">회차별 점수</div>
+          </div>
+          <div style="border: 3px solid #262f4d; border-radius: 4px; overflow: hidden;">
+            <sc-for list="{{ rounds }}" as="r" hint-placeholder-count="8">
+              <div style="{{ r.style }}">
+                <span style="font-family: 'Chakra Petch', ui-monospace, monospace; font-weight: 700; font-size: 13px; color: #8B93AB; width: 34px;">{{ r.no }}</span>
+                <span style="{{ r.labelStyle }}">{{ r.label }}</span>
+                <div style="flex: 1; display: flex; gap: 2px; max-width: 96px;">
+                  <sc-for list="{{ r.blocks }}" as="b" hint-placeholder-count="12">
+                    <div style="{{ b.style }}"></div>
+                  </sc-for>
+                </div>
+                <span style="{{ r.scoreStyle }}">{{ r.score }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <div style="width: 4px; height: 14px; background: #FFD400;"></div>
+            <div style="font-size: 14px; font-weight: 800; color: #C6CEE4;">영역별 정답률</div>
+          </div>
+          <div style="border: 3px solid #262f4d; border-radius: 4px; padding: 14px; display: flex; flex-direction: column; gap: 12px;">
+            <sc-for list="{{ areas }}" as="a" hint-placeholder-count="5">
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <span style="width: 92px; font-size: 14px; font-weight: 700; color: #C6CEE4;">{{ a.label }}</span>
+                <div style="flex: 1; position: relative; height: 12px; background: #232b47; border-radius: 2px; overflow: hidden;">
+                  <div style="{{ a.fillStyle }}"></div>
+                </div>
+                <span style="width: 46px; text-align: right; font-family: 'Chakra Petch', ui-monospace, monospace; font-variant-numeric: tabular-nums; font-weight: 700; font-size: 15px; color: #FFD400;">{{ a.pct }}%</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <div style="width: 4px; height: 14px; background: #5E6A8C;"></div>
+            <div style="font-size: 14px; font-weight: 800; color: #C6CEE4;">사전학습 열람</div>
+          </div>
+          <div style="border: 3px solid #262f4d; border-radius: 4px; overflow: hidden;">
+            <sc-for list="{{ learns }}" as="l" hint-placeholder-count="3">
+              <div style="display: flex; align-items: center; gap: 10px; padding: 11px 12px; border-top: 2px solid #1d2440; background: #12172b;">
+                <span style="font-family: 'Chakra Petch', ui-monospace, monospace; font-weight: 700; font-size: 13px; color: #8B93AB; width: 34px;">{{ l.no }}</span>
+                <span style="flex: 1; font-size: 14px; font-weight: 700; color: #C6CEE4;">{{ l.label }}</span>
+                <span style="{{ l.chipStyle }}">{{ l.chip }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; background: #161d33; border-top: 3px solid #262f4d;">
+        <a href="홈.dc.html" style="display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 0 14px; color: #5E6A8C;">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M4 11l8-7 8 7v9h-5.5v-5h-5v5H4v-9z" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"></path></svg>
+          <span style="font-size: 12px; font-weight: 700;">홈</span>
+        </a>
+        <a href="대시보드.dc.html" style="display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 0 14px; color: #5E6A8C;">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M4 20V10M12 20V4M20 20v-7" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"></path></svg>
+          <span style="font-size: 12px; font-weight: 700;">순위</span>
+        </a>
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 0 14px; color: #FFD400; border-top: 3px solid #FFD400; margin-top: -3px;">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="3.6" stroke="currentColor" stroke-width="2.2"></circle><path d="M5 20c1.2-3.2 3.8-4.8 7-4.8s5.8 1.6 7 4.8" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"></path></svg>
+          <span style="font-size: 12px; font-weight: 700;">내 기록</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="width: 390px; max-width: 100%; font-size: 13px; line-height: 1.7; color: #8B93AB;">회차별 점수는 12칸 블록(만점=골드), 영역별 정답률은 게이지 + 등폭 숫자로 표시합니다. 미개방 회차는 흐리게 처리됩니다.</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:760,&quot;height&quot;:1120}}">
+const ROUNDS = [
+  { no: 1, label: '심폐소생술', score: 11 },
+  { no: 2, label: '밀폐공간 작업', score: 12 },
+  { no: 3, label: '온열질환', score: null, open: true },
+  { no: 4, label: '추락·낙하 예방', score: null },
+  { no: 5, label: '전기 안전', score: null },
+  { no: 6, label: '화학물질 취급', score: null },
+  { no: 7, label: '겨울철 안전', score: null },
+  { no: 8, label: '종합', score: null }
+];
+const AREAS = [
+  { label: '심폐소생술', pct: 92 },
+  { label: '화재예방', pct: 100 },
+  { label: '온열질환', pct: 67 },
+  { label: '사무실 안전', pct: 100 },
+  { label: '위험성평가', pct: 50 }
+];
+const LEARNS = [
+  { no: 1, label: '심폐소생술', seen: true },
+  { no: 2, label: '밀폐공간 작업', seen: true },
+  { no: 3, label: '온열질환', seen: false }
+];
+const NUM = "'Chakra Petch', ui-monospace, monospace";
+
+class Component extends DCLogic {
+  renderVals() {
+    const rounds = ROUNDS.map(r => {
+      const played = r.score !== null, perfect = r.score === 12, dim = !played && !r.open;
+      return {
+        no: String(r.no).padStart(2, '0'),
+        label: r.label,
+        labelStyle: 'flex:1;font-size:14px;font-weight:700;color:' + (dim ? '#5E6A8C' : '#EDF0F7') + ';overflow:hidden;text-overflow:ellipsis;white-space:nowrap;',
+        style: 'display:flex;align-items:center;gap:10px;padding:11px 12px;border-top:2px solid #1d2440;background:' + (perfect ? '#1d1a2c' : '#12172b') + ';' + (dim ? 'opacity:0.55;' : ''),
+        blocks: Array.from({ length: 12 }, (_, i) => ({
+          style: 'flex:1;height:10px;border-radius:1px;background:' + (played && i < r.score ? (perfect ? '#C9A227' : '#FFD400') : '#232b47') + ';'
+        })),
+        score: played ? r.score + '/12' : r.open ? '진행 중' : '-',
+        scoreStyle: 'width:52px;text-align:right;font-family:' + NUM + ';font-variant-numeric:tabular-nums;font-weight:700;font-size:' + (played ? '15px;color:' + (perfect ? '#C9A227' : '#FFD400') : '12px;color:#5E6A8C') + ';'
+      };
+    });
+
+    return {
+      rounds,
+      areas: AREAS.map(a => ({
+        label: a.label, pct: String(a.pct),
+        fillStyle: 'position:absolute;top:0;left:0;bottom:0;width:' + a.pct + '%;background:' + (a.pct === 100 ? '#C9A227' : a.pct >= 70 ? '#FFD400' : '#8B93AB') + ';'
+      })),
+      learns: LEARNS.map(l => ({
+        no: String(l.no).padStart(2, '0'),
+        label: l.label,
+        chip: l.seen ? '열람' : '미열람',
+        chipStyle: 'font-size:12px;font-weight:800;padding:3px 9px;border-radius:2px;' +
+          (l.seen ? 'background:#12261a;border:2px solid #24B24C;color:#7CE09A;' : 'background:#1b2136;border:2px solid #5E6A8C;color:#C6CEE4;')
+      }))
+    };
+  }
+}
+</script>
+</body>
+</html>

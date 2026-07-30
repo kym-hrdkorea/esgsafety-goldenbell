@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@600;700&display=swap" rel="stylesheet" />
+<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" rel="stylesheet" />
+<style>
+  html, body { margin: 0; padding: 0; background: #0b0f1d; }
+  body { -webkit-font-smoothing: antialiased; }
+  a { color: #FFD400; text-decoration: none; }
+  a:hover { color: #FFE873; }
+  button, input { font-family: inherit; }
+  * { scrollbar-width: none; }
+  *::-webkit-scrollbar { display: none; width: 0; height: 0; }
+  @keyframes ring-out { from { transform: scale(0.6); opacity: 0.8; } to { transform: scale(1.45); opacity: 0; } }
+</style>
+</helmet>
+<div style="min-height: 100vh; background: #0b0f1d; font-family: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', sans-serif; word-break: keep-all; color: #EDF0F7; display: flex; flex-direction: column; align-items: center; gap: 20px; padding: 24px 16px 56px;">
+
+  <div style="width: 100%; max-width: 720px; display: flex; flex-direction: column; gap: 14px;">
+    <div style="display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap;">
+      <div style="font-size: 11px; letter-spacing: 0.22em; color: #FFD400; font-weight: 700;">시안 7a · 로그인</div>
+      <div style="flex: 1;"></div>
+      <div style="display: flex; gap: 10px; font-size: 12px; font-weight: 700;"><a href="회원가입.dc.html">회원가입 →</a><a href="홈.dc.html">홈 →</a></div>
+    </div>
+    <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center; background: #131a2e; border: 2px solid #26304f; border-radius: 4px; padding: 14px;">
+      <div style="font-size: 12px; letter-spacing: 0.16em; color: #8B93AB; font-weight: 700; margin-right: 4px;">상태</div>
+      <sc-for list="{{ modeChips }}" as="chip" hint-placeholder-count="3">
+        <button type="button" onClick="{{ chip.onClick }}" style="{{ chip.style }}" style-active="transform: translate(1px, 1px);">{{ chip.label }}</button>
+      </sc-for>
+    </div>
+  </div>
+
+  <div style="width: 390px; max-width: 100%; border: 4px solid #FFD400; border-radius: 6px; background: #12172b; box-shadow: 10px 10px 0 #05070f; overflow: hidden;">
+    <div style="height: 10px; background-image: repeating-linear-gradient(45deg, #FFD400 0 8px, #12172b 8px 16px);"></div>
+
+    <div style="min-height: 792px; display: flex; flex-direction: column; background: #12172b;">
+
+      <div style="flex: 1; padding: 48px 20px 8px; display: flex; flex-direction: column; gap: 28px;">
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 14px; text-align: center;">
+          <div style="position: relative; width: 78px; height: 78px;">
+            <span style="position: absolute; inset: 0; border: 2px solid #C9A227; border-radius: 50%; animation: ring-out 1.2s ease-out 0.3s both;"></span>
+            <span style="position: absolute; inset: 0; border: 2px solid #FFD400; border-radius: 50%; animation: ring-out 1.5s ease-out 0.5s both;"></span>
+            <div style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: #C9A227; border-radius: 50%; border: 3px solid #FFE873;">
+              <svg width="42" height="42" viewBox="0 0 24 24" fill="none"><path d="M12 3c-3.1 0-5.2 2.3-5.2 5.4v3.4L5 14.4v1.2h14v-1.2l-1.8-2.6V8.4C17.2 5.3 15.1 3 12 3z" fill="#12172b"></path><path d="M10.2 17.4a1.9 1.9 0 0 0 3.6 0h-3.6z" fill="#12172b"></path></svg>
+            </div>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 4px;">
+            <div style="font-size: 13px; font-weight: 800; letter-spacing: 0.14em; color: #C9A227;">HRDK</div>
+            <h1 style="margin: 0; font-size: 26px; font-weight: 800; letter-spacing: -0.01em; color: #FFFFFF;">안전 골든벨 퀴즈 리그</h1>
+            <div style="font-size: 15px; font-weight: 600; color: #C6CEE4; letter-spacing: 0.04em;">안전 이룸, 함께 해냄</div>
+          </div>
+        </div>
+
+        <sc-if value="{{ locked }}" hint-placeholder-val="{{ false }}">
+          <div style="display: flex; align-items: center; gap: 10px; padding: 13px 14px; background: #2a171a; border: 3px solid #E23A2E; border-radius: 4px;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" style="flex: 0 0 auto;"><rect x="5" y="10.5" width="14" height="9" rx="1.5" stroke="#F0A099" stroke-width="2.2"></rect><path d="M8.5 10V8a3.5 3.5 0 0 1 7 0v2" stroke="#F0A099" stroke-width="2.2"></path></svg>
+            <div style="font-size: 14px; font-weight: 700; color: #F0A099; line-height: 1.5;">비밀번호를 5회 틀렸습니다. 5분 후 다시 시도해 주세요.</div>
+          </div>
+        </sc-if>
+
+        <div style="display: flex; flex-direction: column; gap: 14px;">
+          <div style="display: flex; flex-direction: column; gap: 6px;">
+            <label style="font-size: 13px; font-weight: 700; color: #C6CEE4;">사번</label>
+            <input type="text" inputMode="numeric" placeholder="사번을 입력하세요" value="20261234" style="{{ inputStyle }}" style-focus="border-color: #FFD400;" />
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 6px;">
+            <label style="font-size: 13px; font-weight: 700; color: #C6CEE4;">비밀번호 4자리</label>
+            <input type="password" inputMode="numeric" maxLength="4" placeholder="숫자 4자리" value="1234" style="{{ pinStyle }}" style-focus="border-color: #FFD400;" />
+            <sc-if value="{{ err }}" hint-placeholder-val="{{ false }}">
+              <div style="display: flex; align-items: center; gap: 5px; font-size: 13px; font-weight: 700; color: #F0A099;"><span style="font-weight: 900;">✕</span>사번 또는 비밀번호가 올바르지 않습니다.</div>
+            </sc-if>
+          </div>
+        </div>
+      </div>
+
+      <div style="padding: 10px 20px 18px; display: flex; flex-direction: column; gap: 12px;">
+        <button type="button" style="{{ loginBtnStyle }}" style-active="transform: translate(4px, 4px); box-shadow: 1px 1px 0 rgba(0,0,0,0.6);">로그인</button>
+        <div style="text-align: center; font-size: 14px; color: #8B93AB;">아직 가입하지 않으셨나요? <a href="회원가입.dc.html" style="font-weight: 700; text-decoration: underline; text-underline-offset: 3px;">회원가입</a></div>
+      </div>
+    </div>
+  </div>
+
+  <div style="width: 390px; max-width: 100%; font-size: 13px; line-height: 1.7; color: #8B93AB;">{{ note }}</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:760,&quot;height&quot;:1120}}">
+class Component extends DCLogic {
+  state = { mode: 'base' };
+
+  renderVals() {
+    const m = this.state.mode, err = m === 'err', locked = m === 'lock';
+    const base = 'width:100%;box-sizing:border-box;min-height:52px;padding:0 14px;background:#1b2239;border-radius:4px;color:#FFFFFF;font-size:16px;font-weight:600;outline:none;font-variant-numeric:tabular-nums;border:3px solid ';
+    return {
+      err, locked,
+      modeChips: [
+        { key: 'base', label: '기본' },
+        { key: 'err', label: '오류' },
+        { key: 'lock', label: '5회 잠금' }
+      ].map(x => ({
+        label: x.label,
+        onClick: () => this.setState({ mode: x.key }),
+        style: 'min-height:34px;padding:0 12px;border-radius:3px;font-weight:700;font-size:13px;cursor:pointer;border:2px solid ' +
+          (m === x.key ? '#FFD400;background:#FFD400;color:#12172b;' : '#2f3a5e;background:#0f1425;color:#9AA4C2;')
+      })),
+      inputStyle: base + (locked ? '#2f3a5e;opacity:0.55;' : '#3a4468;'),
+      pinStyle: base + 'letter-spacing:0.3em;' + (err ? 'border-color:#E23A2E;' : locked ? 'border-color:#2f3a5e;opacity:0.55;' : 'border-color:#3a4468;'),
+      loginBtnStyle: 'width:100%;min-height:56px;border-radius:4px;font-size:18px;font-weight:800;letter-spacing:0.02em;cursor:pointer;' +
+        (locked
+          ? 'background:#232b47;border:3px solid #2f3a5e;color:#6F7A9B;box-shadow:none;'
+          : 'background:#FFD400;border:3px solid #FFE873;box-shadow:5px 5px 0 #6B5200;color:#12172b;'),
+      note: locked
+        ? '5회 실패 잠금 상태 — 입력 필드와 버튼이 비활성화되고 잠금 배너가 표시됩니다.'
+        : err
+          ? '오류는 필드 테두리(레드) + ✕ 아이콘 + copy.md 문안 그대로 표시합니다.'
+          : '로그인은 사번 + 숫자 4자리 PIN 두 필드뿐입니다. 골든벨 로고 링 모션은 진입 시 1회 재생됩니다.'
+    };
+  }
+}
+</script>
+</body>
+</html>

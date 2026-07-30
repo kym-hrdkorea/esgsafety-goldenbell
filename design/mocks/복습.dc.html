@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@600;700&display=swap" rel="stylesheet" />
+<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" rel="stylesheet" />
+<style>
+  html, body { margin: 0; padding: 0; background: #0b0f1d; }
+  body { -webkit-font-smoothing: antialiased; }
+  a { color: #FFD400; text-decoration: none; }
+  a:hover { color: #FFE873; }
+  button { font-family: inherit; }
+  * { scrollbar-width: none; }
+  *::-webkit-scrollbar { display: none; width: 0; height: 0; }
+</style>
+</helmet>
+<div style="min-height: 100vh; background: #0b0f1d; font-family: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', sans-serif; word-break: keep-all; color: #EDF0F7; display: flex; flex-direction: column; align-items: center; gap: 20px; padding: 24px 16px 56px;">
+
+  <div style="width: 100%; max-width: 720px; display: flex; flex-direction: column; gap: 14px;">
+    <div style="display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap;">
+      <div style="font-size: 11px; letter-spacing: 0.22em; color: #FFD400; font-weight: 700;">시안 9a · 복습 (종료 회차)</div>
+      <div style="flex: 1;"></div>
+      <div style="display: flex; gap: 10px; font-size: 12px; font-weight: 700;"><a href="홈.dc.html">← 홈</a><a href="사전학습.dc.html">사전학습 →</a><a href="내기록.dc.html">내 기록 →</a></div>
+    </div>
+    <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center; background: #131a2e; border: 2px solid #26304f; border-radius: 4px; padding: 14px;">
+      <div style="font-size: 12px; letter-spacing: 0.16em; color: #8B93AB; font-weight: 700; margin-right: 4px;">상태</div>
+      <sc-for list="{{ modeChips }}" as="chip" hint-placeholder-count="2">
+        <button type="button" onClick="{{ chip.onClick }}" style="{{ chip.style }}" style-active="transform: translate(1px, 1px);">{{ chip.label }}</button>
+      </sc-for>
+    </div>
+  </div>
+
+  <div style="width: 390px; max-width: 100%; border: 4px solid #FFD400; border-radius: 6px; background: #12172b; box-shadow: 10px 10px 0 #05070f; overflow: hidden;">
+    <div style="height: 10px; background-image: repeating-linear-gradient(45deg, #FFD400 0 8px, #12172b 8px 16px);"></div>
+
+    <div style="min-height: 792px; display: flex; flex-direction: column; background: #12172b;">
+
+      <div style="padding: 16px 16px 14px; background: #161d33; border-bottom: 3px solid #262f4d; display: flex; flex-direction: column; gap: 8px;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <div style="width: 4px; height: 16px; background: #FFD400;"></div>
+          <h1 style="margin: 0; font-size: 21px; font-weight: 800; letter-spacing: -0.01em; color: #FFFFFF;">2회차 복습</h1>
+          <span style="font-size: 12px; font-weight: 800; color: #8B93AB; border: 2px solid #3a4468; padding: 2px 8px; border-radius: 2px;">점수 미반영</span>
+        </div>
+        <div style="font-size: 14px; line-height: 1.6; color: #8B93AB;">종료된 회차입니다. 문제와 해설을 다시 볼 수 있습니다.</div>
+      </div>
+
+      <div style="flex: 1; padding: 16px 16px 8px; display: flex; flex-direction: column; gap: 14px;">
+        <sc-if value="{{ noRecord }}" hint-placeholder-val="{{ false }}">
+          <div style="display: flex; align-items: flex-start; gap: 10px; padding: 13px 14px; background: #1b2136; border: 3px solid #5E6A8C; border-radius: 4px;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" style="flex: 0 0 auto; margin-top: 2px;"><circle cx="12" cy="12" r="8.5" stroke="#C6CEE4" stroke-width="2.2"></circle><path d="M12 8v4.5M12 15.5v0.5" stroke="#C6CEE4" stroke-width="2.2" stroke-linecap="round"></path></svg>
+            <div style="font-size: 14px; font-weight: 600; color: #C6CEE4; line-height: 1.6;">이 회차에는 참여하지 않으셨습니다. 문제와 해설은 열람할 수 있습니다.</div>
+          </div>
+        </sc-if>
+
+        <sc-for list="{{ cards }}" as="c" hint-placeholder-count="6">
+          <div style="background: #161d33; border: 3px solid #262f4d; border-radius: 4px; padding: 14px; display: flex; flex-direction: column; gap: 10px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="font-family: 'Chakra Petch', ui-monospace, monospace; font-weight: 700; font-size: 15px; color: #FFD400;">{{ c.no }}</span>
+              <span style="font-size: 12px; font-weight: 800; color: #12172b; background: #C9A227; padding: 2px 7px; border-radius: 2px;">{{ c.typeLabel }}</span>
+              <div style="flex: 1;"></div>
+              <sc-if value="{{ c.result }}" hint-placeholder-val="{{ false }}">
+                <span style="{{ c.resultStyle }}">{{ c.resultIcon }} {{ c.result }}</span>
+              </sc-if>
+            </div>
+            <div style="font-size: 17px; line-height: 1.55; font-weight: 700; color: #FFFFFF; text-wrap: pretty;">{{ c.stem }}</div>
+            <div style="display: flex; align-items: baseline; gap: 8px; padding: 9px 11px; background: #12172b; border-left: 4px solid #C9A227; border-radius: 0 3px 3px 0;">
+              <span style="font-size: 12px; font-weight: 800; color: #C9A227; white-space: nowrap;">정답</span>
+              <span style="font-size: 15px; font-weight: 700; color: #FFFFFF;">{{ c.answerText }}</span>
+            </div>
+            <sc-if value="{{ c.myAnswer }}" hint-placeholder-val="{{ false }}">
+              <div style="font-size: 13px; font-weight: 700; color: #F0A099;">내 답: {{ c.myAnswer }}</div>
+            </sc-if>
+            <div style="display: flex; flex-direction: column; gap: 5px;">
+              <div style="display: flex; align-items: center; gap: 7px;">
+                <div style="width: 3px; height: 12px; background: #FFD400;"></div>
+                <div style="font-size: 12px; font-weight: 800; letter-spacing: 0.08em; color: #C6CEE4;">해설</div>
+              </div>
+              <p style="margin: 0; font-size: 15px; line-height: 1.65; color: #C9D2E8; text-wrap: pretty;">{{ c.explain }}</p>
+            </div>
+            <sc-if value="{{ c.ref }}" hint-placeholder-val="{{ false }}">
+              <div style="display: flex; align-items: baseline; gap: 7px;">
+                <div style="font-size: 12px; font-weight: 800; letter-spacing: 0.08em; color: #8B93AB;">근거</div>
+                <div style="font-size: 13px; color: #8B93AB; font-variant-numeric: tabular-nums;">{{ c.ref }}</div>
+              </div>
+            </sc-if>
+          </div>
+        </sc-for>
+      </div>
+
+      <div style="padding: 10px 16px 16px; display: flex; flex-direction: column; gap: 8px;">
+        <a href="사전학습.dc.html" style="display: flex; align-items: center; justify-content: center; min-height: 52px; border-radius: 4px; background: #FFD400; border: 3px solid #FFE873; box-shadow: 5px 5px 0 #6B5200; color: #12172b; font-size: 16px; font-weight: 800;" style-active="transform: translate(4px, 4px); box-shadow: 1px 1px 0 rgba(0,0,0,0.6);">사전학습 자료 다시 보기</a>
+        <a href="홈.dc.html" style="display: flex; align-items: center; justify-content: center; min-height: 48px; border-radius: 4px; background: transparent; border: 2px solid #3a4468; color: #C6CEE4; font-size: 15px; font-weight: 700;" style-active="transform: translate(1px, 1px);">홈으로</a>
+      </div>
+    </div>
+  </div>
+
+  <div style="width: 390px; max-width: 100%; font-size: 13px; line-height: 1.7; color: #8B93AB;">{{ note }}</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:760,&quot;height&quot;:1400}}">
+const ITEMS = [
+  { typeLabel: 'O / X', stem: '심정지 환자를 발견했을 때 가슴압박은 분당 100~120회 속도로 실시한다.', answerText: 'O',
+    explain: '너무 느리면 혈액순환이 되지 않고, 너무 빠르면 압박 깊이가 얕아집니다.', ref: '2020 한국형 심폐소생술 가이드라인', result: '정답' },
+  { typeLabel: '4지선다', stem: '전기설비에서 발생한 화재는 몇 급 화재인가?', answerText: 'C급',
+    explain: 'A급=일반, B급=유류, C급=전기, K급=주방(식용유). 사무실 비치 분말소화기는 통상 ABC 겸용입니다.', ref: '', result: '정답' },
+  { typeLabel: '4지선다', stem: '폭염작업 시 체감온도가 33℃ 이상인 경우 사업주가 부여해야 하는 휴식 기준은?', answerText: '2시간마다 20분 이상',
+    explain: "2025년 7월 17일부터 법령상 의무입니다. 체감온도 31℃ 이상이 '폭염작업'의 기준이고, 33℃ 이상이면 2시간마다 최소 20분(또는 1시간마다 10분) 휴식을 주어야 합니다.",
+    ref: '안전보건규칙 §559', result: '오답', myAnswer: '권고사항일 뿐 의무는 아니다' },
+  { typeLabel: '4지선다', stem: '사무실에서 바닥에 늘어진 전선을 발견했다. 가장 바람직한 행동은?', answerText: '즉시 정리할 수 있으면 정리하고, 구조적 문제면 신고한다',
+    explain: '내가 지금 없앨 수 있는 위험은 바로 없애고, 혼자 해결할 수 없는 것은 신고합니다. 발견-조치-신고가 안전관리의 기본 순환입니다.', ref: '', result: '정답' },
+  { typeLabel: '순서배열', stem: '위험성평가의 실시 절차를 순서대로 배열하시오.', answerText: '2 → 4 → 1 → 5 → 3',
+    explain: "2023년 개정 고시부터 '위험성 추정' 단계가 삭제되고 5단계로 정비되었습니다.", ref: '사업장 위험성평가에 관한 지침', result: '시간초과' },
+  { typeLabel: '단답', stem: '사고로 이어지지는 않았지만 사고가 날 수 있었던 위험한 순간을 뜻하는 안전 용어는? (영어로 near miss)', answerText: '아차사고',
+    explain: '큰 사고 1건 뒤에는 경상 29건, 무상해 아차사고 300건이 있습니다(하인리히 법칙). 아차사고를 줄이면 큰 사고가 줄어듭니다.', ref: '', result: '정답' }
+];
+
+class Component extends DCLogic {
+  state = { participated: true };
+
+  renderVals() {
+    const p = this.state.participated;
+    const resultStyle = r =>
+      'display:flex;align-items:center;gap:4px;font-size:12px;font-weight:800;padding:3px 8px;border-radius:2px;' +
+      (r === '정답' ? 'background:#12261a;border:2px solid #24B24C;color:#7CE09A;'
+        : r === '오답' ? 'background:#2a171a;border:2px solid #E23A2E;color:#F0A099;'
+        : 'background:#1b2136;border:2px solid #5E6A8C;color:#C6CEE4;');
+
+    return {
+      noRecord: !p,
+      modeChips: [
+        { key: true, label: '참여한 회차' },
+        { key: false, label: '미참여 (빈 상태)' }
+      ].map(m => ({
+        label: m.label,
+        onClick: () => this.setState({ participated: m.key }),
+        style: 'min-height:34px;padding:0 12px;border-radius:3px;font-weight:700;font-size:13px;cursor:pointer;border:2px solid ' +
+          (p === m.key ? '#FFD400;background:#FFD400;color:#12172b;' : '#2f3a5e;background:#0f1425;color:#9AA4C2;')
+      })),
+      cards: ITEMS.map((it, i) => ({
+        no: (i + 1) + '번',
+        typeLabel: it.typeLabel,
+        stem: it.stem,
+        answerText: it.answerText,
+        explain: it.explain,
+        ref: it.ref || false,
+        result: p ? it.result : false,
+        resultIcon: it.result === '정답' ? '✓' : it.result === '오답' ? '✕' : '◷',
+        resultStyle: resultStyle(it.result),
+        myAnswer: p && it.myAnswer ? it.myAnswer : false
+      })),
+      note: p
+        ? '문항마다 내 결과(정답 ✓ / 오답 ✕ / 시간초과 ◷)를 병기하고, 오답은 내 답을 함께 보여줍니다.'
+        : '미참여 상태 — 안내 배너가 붙고 내 결과 표기 없이 문제와 해설만 열람됩니다.'
+    };
+  }
+}
+</script>
+</body>
+</html>

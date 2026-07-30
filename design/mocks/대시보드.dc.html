@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@600;700&display=swap" rel="stylesheet" />
+<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" rel="stylesheet" />
+<style>
+  html, body { margin: 0; padding: 0; background: #0b0f1d; }
+  body { -webkit-font-smoothing: antialiased; }
+  a { color: #FFD400; text-decoration: none; }
+  a:hover { color: #FFE873; }
+  button { font-family: inherit; }
+  * { scrollbar-width: none; }
+  *::-webkit-scrollbar { display: none; width: 0; height: 0; }
+</style>
+</helmet>
+<div style="min-height: 100vh; background: #0b0f1d; font-family: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', sans-serif; word-break: keep-all; color: #EDF0F7; display: flex; flex-direction: column; align-items: center; gap: 20px; padding: 24px 16px 56px;">
+
+  <div style="width: 100%; max-width: 720px; display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap;">
+    <div style="font-size: 11px; letter-spacing: 0.22em; color: #FFD400; font-weight: 700;">시안 3a · 대시보드(순위)</div>
+    <div style="font-size: 12px; color: #8B93AB;">내 현황 + 순위 4종 탭 + 5행/더보기 20행</div>
+    <div style="flex: 1;"></div>
+    <div style="display: flex; gap: 10px; font-size: 12px; font-weight: 700;"><a href="응시-답변단계.dc.html">← 답변 단계</a><a href="응시-해설단계.dc.html">← 해설 단계</a><a href="홈.dc.html">홈 →</a><a href="회차결과.dc.html">회차 결과 →</a></div>
+  </div>
+
+  <div style="width: 390px; max-width: 100%; border: 4px solid #FFD400; border-radius: 6px; background: #12172b; box-shadow: 10px 10px 0 #05070f; overflow: hidden;">
+    <div style="height: 10px; background-image: repeating-linear-gradient(45deg, #FFD400 0 8px, #12172b 8px 16px);"></div>
+
+    <div style="min-height: 792px; display: flex; flex-direction: column; background: #12172b;">
+
+      <div style="padding: 16px 16px 0; display: flex; flex-direction: column; gap: 14px;">
+        <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 10px;">
+          <h1 style="margin: 0; font-size: 24px; font-weight: 800; letter-spacing: -0.01em; color: #FFFFFF;">순위</h1>
+          <div style="font-size: 12px; color: #8B93AB; font-variant-numeric: tabular-nums;">07.30 14:00 기준</div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+          <div style="background: #161d33; border: 3px solid #3a4468; border-radius: 4px; box-shadow: 4px 4px 0 #070a16; padding: 12px 14px; display: flex; flex-direction: column; gap: 4px;">
+            <div style="font-size: 12px; font-weight: 700; color: #8B93AB;">내 순위</div>
+            <div style="display: flex; align-items: baseline; gap: 2px; font-family: 'Chakra Petch', ui-monospace, monospace; font-variant-numeric: tabular-nums; font-weight: 700;">
+              <span style="font-size: 30px; color: #FFD400; line-height: 1;">47</span>
+              <span style="font-size: 14px; color: #8B93AB;">위</span>
+              <span style="font-size: 12px; color: #5E6A8C; margin-left: 5px;">/ 1,214</span>
+            </div>
+          </div>
+          <div style="background: #161d33; border: 3px solid #3a4468; border-radius: 4px; box-shadow: 4px 4px 0 #070a16; padding: 12px 14px; display: flex; flex-direction: column; gap: 4px;">
+            <div style="font-size: 12px; font-weight: 700; color: #8B93AB;">우리 부서 순위</div>
+            <div style="display: flex; align-items: baseline; gap: 2px; font-family: 'Chakra Petch', ui-monospace, monospace; font-variant-numeric: tabular-nums; font-weight: 700;">
+              <span style="font-size: 30px; color: #FFD400; line-height: 1;">3</span>
+              <span style="font-size: 14px; color: #8B93AB;">위</span>
+              <span style="font-size: 12px; color: #5E6A8C; margin-left: 5px;">/ 86</span>
+            </div>
+          </div>
+        </div>
+        <div style="font-size: 13px; color: #8B93AB; margin-top: -6px;">3회 이상 참여하면 순위에 반영됩니다</div>
+
+        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px;">
+          <sc-for list="{{ tabs }}" as="tab" hint-placeholder-count="4">
+            <button type="button" onClick="{{ tab.onClick }}" style="{{ tab.style }}" style-active="transform: translate(1px, 1px);">{{ tab.label }}</button>
+          </sc-for>
+        </div>
+      </div>
+
+      <div style="flex: 1; min-height: 0; overflow-y: auto; padding: 12px 16px 8px; display: flex; flex-direction: column; gap: 10px;">
+        <sc-if value="{{ deptNotice }}" hint-placeholder-val="{{ false }}">
+          <div style="font-size: 13px; color: #8B93AB; padding: 2px 2px 0;">참여자 3명 이상인 부서만 표시됩니다</div>
+        </sc-if>
+
+        <div style="border: 3px solid #262f4d; border-radius: 4px; overflow: hidden;">
+          <div style="{{ headStyle }}">
+            <sc-for list="{{ headCells }}" as="h" hint-placeholder-count="4">
+              <div style="{{ h.style }}">{{ h.label }}</div>
+            </sc-for>
+          </div>
+          <sc-for list="{{ rows }}" as="row" hint-placeholder-count="5">
+            <div style="{{ row.style }}">
+              <div style="{{ row.rankStyle }}">{{ row.rank }}</div>
+              <div style="min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 700; color: #EDF0F7; display: flex; align-items: center; gap: 6px;"><span style="overflow: hidden; text-overflow: ellipsis;">{{ row.name }}</span><sc-if value="{{ row.me }}" hint-placeholder-val="{{ false }}"><span style="flex: 0 0 auto; font-size: 10px; font-weight: 800; background: #FFD400; color: #12172b; padding: 2px 5px; border-radius: 2px;">나</span></sc-if></div>
+              <div style="min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #8B93AB; font-size: 13px;">{{ row.sub }}</div>
+              <div style="text-align: right; font-family: 'Chakra Petch', ui-monospace, monospace; font-variant-numeric: tabular-nums; font-weight: 700; color: #FFD400;">{{ row.value }}</div>
+            </div>
+          </sc-for>
+        </div>
+
+        <button type="button" onClick="{{ toggleMore }}" style="width: 100%; min-height: 48px; border-radius: 4px; background: #161d33; border: 3px solid #3a4468; box-shadow: 4px 4px 0 #070a16; color: #C6CEE4; font-size: 15px; font-weight: 700; cursor: pointer;" style-active="transform: translate(3px, 3px); box-shadow: 1px 1px 0 rgba(0,0,0,0.6);">{{ moreLabel }}</button>
+
+        <div style="border: 3px solid #FFD400; border-radius: 4px; background: #1c2138; display: grid; grid-template-columns: 44px 1fr 1fr 64px; align-items: center; gap: 8px; padding: 11px 12px; font-size: 14px;">
+          <div style="font-family: 'Chakra Petch', ui-monospace, monospace; font-variant-numeric: tabular-nums; font-weight: 700; color: #FFD400;">{{ myRank }}</div>
+          <div style="font-weight: 700; color: #EDF0F7; display: flex; align-items: center; gap: 6px;"><span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ myName }}</span><span style="flex: 0 0 auto; font-size: 10px; font-weight: 800; background: #FFD400; color: #12172b; padding: 2px 5px; border-radius: 2px;">{{ myBadge }}</span></div>
+          <div style="color: #8B93AB; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ mySub }}</div>
+          <div style="text-align: right; font-family: 'Chakra Petch', ui-monospace, monospace; font-variant-numeric: tabular-nums; font-weight: 700; color: #FFD400;">{{ myValue }}</div>
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; background: #161d33; border-top: 3px solid #262f4d;">
+        <a href="홈.dc.html" style="display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 0 14px; color: #5E6A8C;">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M4 11l8-7 8 7v9h-5.5v-5h-5v5H4v-9z" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"></path></svg>
+          <span style="font-size: 12px; font-weight: 700;">홈</span>
+        </a>
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 0 14px; color: #FFD400; border-top: 3px solid #FFD400; margin-top: -3px;">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M4 20V10M12 20V4M20 20v-7" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"></path></svg>
+          <span style="font-size: 12px; font-weight: 700;">순위</span>
+        </div>
+        <a href="내기록.dc.html" style="display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 0 14px; color: #5E6A8C;">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="3.6" stroke="currentColor" stroke-width="2.2"></circle><path d="M5 20c1.2-3.2 3.8-4.8 7-4.8s5.8 1.6 7 4.8" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"></path></svg>
+          <span style="font-size: 12px; font-weight: 700;">내 기록</span>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <div style="width: 390px; max-width: 100%; font-size: 13px; line-height: 1.7; color: #8B93AB;">기본 5행 표시, `더보기`로 20행까지 확장됩니다. 1위는 브라스 골드 배지, 내 행은 하단에 고정 표시됩니다.</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:760,&quot;height&quot;:1120}}">
+const NAMES = ['소화기달인','비상구지킴이','무재해챌린저','초록불','헬멧쓴곰','골든벨울림','아차사고헌터','침착맨손','반보앞','체크리스트','오늘도무사히','예방주사','현장의눈','완강기마스터','스프링클러','평정심','금요일마감','대피로안내자','안전제일주의','건널목'];
+const ORGS = ['서울지역본부','부산지역본부','경기지사','본부 능력개발국','인천지사','대구지역본부','본부 자격시험국','광주지역본부','대전지역본부','울산지사'];
+const DEPTS = ['안전보건팀','능력개발팀','자격시험팀','경영지원팀','디지털혁신팀','국제협력팀','교육운영팀','고객지원팀','기획조정팀','시설관리팀','홍보팀','인재채용팀','정보보호팀','회계팀','법무팀','상생협력팀','연구개발팀','품질관리팀','자산관리팀','총무팀'];
+
+const TABS = [
+  { key: 'total', label: '전체 누적' },
+  { key: 'round', label: '회차별' },
+  { key: 'avg', label: '평균 점수' },
+  { key: 'dept', label: '부서' }
+];
+
+const NUM = "'Chakra Petch', ui-monospace, monospace";
+
+function build(key) {
+  if (key === 'dept') {
+    return DEPTS.map((d, i) => ({
+      rank: i + 1, name: d,
+      sub: (28 - i) + '명',
+      value: (11.9 - i * 0.18).toFixed(1)
+    }));
+  }
+  return NAMES.map((n, i) => {
+    const org = ORGS[i % ORGS.length];
+    if (key === 'round') return { rank: i + 1, name: n, sub: org, value: i < 4 ? '12' : String(11 - Math.floor(i / 5)) };
+    if (key === 'avg') return { rank: i + 1, name: n, sub: org, value: (12 - i * 0.15).toFixed(2) };
+    return { rank: i + 1, name: n, sub: org, value: String(36 - Math.floor(i * 0.8)) };
+  });
+}
+
+const HEADS = {
+  total: ['순위', '닉네임', '소속', '점수'],
+  round: ['순위', '닉네임', '소속', '점수'],
+  avg: ['순위', '닉네임', '소속', '평균'],
+  dept: ['순위', '부서', '참여자', '평균']
+};
+const MYVAL = { total: '23', round: '11', avg: '11.50', dept: '11.2' };
+
+class Component extends DCLogic {
+  state = { tab: 'total', more: false };
+
+  renderVals() {
+    const s = this.state;
+    const tabs = TABS.map(t => ({
+      label: t.label,
+      onClick: () => this.setState({ tab: t.key, more: false }),
+      style: 'min-height:44px;padding:0 4px;border-radius:3px;font-size:13px;font-weight:700;cursor:pointer;border:2px solid ' +
+        (s.tab === t.key ? '#FFD400;background:#FFD400;color:#12172b;box-shadow:3px 3px 0 #6B5200;' : '#2f3a5e;background:#0f1425;color:#9AA4C2;')
+    }));
+
+    const all = build(s.tab);
+    const shown = s.more ? all.slice(0, 20) : all.slice(0, 5);
+    const grid = 'display:grid;grid-template-columns:44px 1fr 1fr 64px;align-items:center;gap:8px;padding:11px 12px;font-size:14px;';
+
+    const rows = shown.map(r => {
+      const top1 = r.rank === 1, top3 = r.rank <= 3;
+      return {
+        rank: String(r.rank), name: r.name, sub: r.sub, value: r.value, me: false,
+        style: grid + 'background:' + (top1 ? '#1e1a2e' : '#12172b') + ';border-top:2px solid #1d2440;',
+        rankStyle: top1
+          ? 'font-family:' + NUM + ';font-weight:700;font-size:13px;display:flex;align-items:center;justify-content:center;width:26px;height:26px;background:#C9A227;color:#12172b;border-radius:2px;box-shadow:2px 2px 0 #070a16;'
+          : top3
+            ? 'font-family:' + NUM + ';font-weight:700;font-size:13px;display:flex;align-items:center;justify-content:center;width:26px;height:26px;border:2px solid #C9A227;color:#C9A227;border-radius:2px;box-sizing:border-box;'
+            : 'font-family:' + NUM + ';font-variant-numeric:tabular-nums;font-weight:700;color:#8B93AB;padding-left:6px;'
+      };
+    });
+
+    return {
+      tabs, rows,
+      headCells: HEADS[s.tab].map((h, i) => ({ label: h, style: 'font-size:12px;font-weight:800;letter-spacing:0.08em;color:#8B93AB;' + (i === 3 ? 'text-align:right;' : '') })),
+      headStyle: 'display:grid;grid-template-columns:44px 1fr 1fr 64px;gap:8px;padding:9px 12px;background:#161d33;',
+      deptNotice: s.tab === 'dept',
+      toggleMore: () => this.setState(st => ({ more: !st.more })),
+      moreLabel: s.more ? '접기' : '더보기',
+      myValue: MYVAL[s.tab],
+      myRank: s.tab === 'dept' ? '3' : '47',
+      myName: s.tab === 'dept' ? '안전보건팀' : '한걸음',
+      myBadge: s.tab === 'dept' ? '우리 부서' : '나',
+      mySub: s.tab === 'dept' ? '12명' : '서울지역본부'
+    };
+  }
+}
+</script>
+</body>
+</html>
