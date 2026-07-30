@@ -1,1 +1,219 @@
 @import "tailwindcss";
+
+/* ── 디자인 토큰 (design/tokens.css 이식본) ─────────────────────────
+   Tailwind v4 @theme으로 등록해 bg-gb-* / text-gb-* / border-gb-* 유틸을 생성한다. */
+@theme {
+  /* Surface */
+  --color-gb-bg-page: #0b0f1d;
+  --color-gb-bg-screen: #12172b;
+  --color-gb-bg-panel: #161d33;
+  --color-gb-bg-card: #1b2239;
+  --color-gb-bg-highlight: #1c2138;
+  --color-gb-bg-block: #232b47;
+  --color-gb-bg-gold-tint: #1d1a2c;
+
+  /* Border */
+  --color-gb-border-divider: #262f4d;
+  --color-gb-border-card: #3a4468;
+  --color-gb-border-chip: #2f3a5e;
+  --color-gb-border-row: #1d2440;
+
+  /* Brand */
+  --color-gb-yellow: #ffd400;
+  --color-gb-yellow-light: #ffe873;
+  --color-gb-yellow-shadow: #6b5200;
+  --color-gb-gold: #c9a227;
+
+  /* Semantic */
+  --color-gb-green: #24b24c;
+  --color-gb-green-text: #7ce09a;
+  --color-gb-green-bg: #12261a;
+  --color-gb-green-border-dim: #1d5c33;
+  --color-gb-red: #e23a2e;
+  --color-gb-red-text: #f0a099;
+  --color-gb-red-bg: #2a171a;
+
+  /* Text */
+  --color-gb-text-primary: #edf0f7;
+  --color-gb-text-body: #c9d2e8;
+  --color-gb-text-strong-sub: #c6cee4;
+  --color-gb-text-secondary: #8b93ab;
+  --color-gb-text-dim: #5e6a8c;
+
+  /* Shadow: blur 없는 offset 전용 */
+  --shadow-gb-card: 4px 4px 0 #070a16;
+  --shadow-gb-cta: 5px 5px 0 #6b5200;
+  --shadow-gb-frame: 10px 10px 0 #05070f;
+  --shadow-gb-pressed: 1px 1px 0 rgba(0, 0, 0, 0.6);
+
+  /* Typography */
+  --font-gb-kr: "Pretendard Variable", Pretendard, -apple-system,
+    BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic",
+    "Noto Sans KR", sans-serif;
+  --font-gb-num: "Chakra Petch", ui-monospace, "SF Mono", monospace;
+}
+
+html {
+  background: var(--color-gb-bg-screen);
+}
+
+body {
+  font-family: var(--font-gb-kr);
+  color: var(--color-gb-text-primary);
+  word-break: keep-all;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── 공용 컴포넌트 클래스 ── */
+@layer components {
+  /* 최상단 10px 해저드 스트라이프 (전 화면 공통) */
+  .gb-hazard {
+    background-image: repeating-linear-gradient(
+      45deg,
+      var(--color-gb-yellow) 0 8px,
+      var(--color-gb-bg-screen) 8px 16px
+    );
+  }
+
+  .gb-label {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--color-gb-text-strong-sub);
+  }
+
+  .gb-input {
+    width: 100%;
+    box-sizing: border-box;
+    min-height: 52px;
+    padding: 0 14px;
+    background: var(--color-gb-bg-card);
+    border: 3px solid var(--color-gb-border-card);
+    border-radius: 4px;
+    color: #ffffff;
+    font-size: 16px;
+    font-weight: 600;
+    outline: none;
+    font-variant-numeric: tabular-nums;
+  }
+  .gb-input:focus {
+    border-color: var(--color-gb-yellow);
+  }
+  .gb-input[aria-invalid="true"] {
+    border-color: var(--color-gb-red);
+  }
+  .gb-input:disabled {
+    border-color: var(--color-gb-border-chip);
+    opacity: 0.55;
+  }
+
+  .gb-select {
+    appearance: none;
+    padding: 0 34px 0 10px;
+    font-size: 15px;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8'><path d='M1 1l5 5 5-5' stroke='%23FFD400' stroke-width='2.4' fill='none'/></svg>");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+  }
+  .gb-select optgroup,
+  .gb-select option {
+    background: var(--color-gb-bg-card);
+    color: #ffffff;
+  }
+
+  /* 하단 주 CTA. 눌림은 transition 없이 즉시 — 물리적인 눌림감 */
+  .gb-cta {
+    width: 100%;
+    min-height: 56px;
+    border-radius: 4px;
+    background: var(--color-gb-yellow);
+    border: 3px solid var(--color-gb-yellow-light);
+    box-shadow: var(--shadow-gb-cta);
+    color: var(--color-gb-bg-screen);
+    font-size: 18px;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+  }
+  .gb-cta:active {
+    transform: translate(4px, 4px);
+    box-shadow: var(--shadow-gb-pressed);
+  }
+  .gb-cta:disabled {
+    background: var(--color-gb-bg-block);
+    border-color: var(--color-gb-border-chip);
+    box-shadow: none;
+    color: #6f7a9b;
+    cursor: default;
+  }
+  .gb-cta:disabled:active {
+    transform: none;
+  }
+
+  .gb-field-error {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--color-gb-red-text);
+  }
+}
+
+/* ── Motion (design/tokens.css 키프레임) ── */
+@keyframes gb-ring-out {
+  from {
+    transform: scale(0.55);
+    opacity: 0.9;
+  }
+  to {
+    transform: scale(1.45);
+    opacity: 0;
+  }
+}
+@keyframes gb-bell-swing {
+  0% {
+    transform: rotate(0);
+  }
+  20% {
+    transform: rotate(-14deg);
+  }
+  45% {
+    transform: rotate(11deg);
+  }
+  70% {
+    transform: rotate(-5deg);
+  }
+  100% {
+    transform: rotate(0);
+  }
+}
+@keyframes gb-rise-in {
+  from {
+    transform: translateY(8px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+@keyframes gb-hz-slide {
+  from {
+    background-position: 0 0;
+  }
+  to {
+    background-position: 32px 0;
+  }
+}
+@keyframes gb-hz-shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-1.5px);
+  }
+  75% {
+    transform: translateX(1.5px);
+  }
+}
