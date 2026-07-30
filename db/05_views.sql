@@ -7,19 +7,43 @@
 -- =====================================================================
 
 -- ---------------------------------------------------------------------
--- 기초: 참가자 × 회차 점수
+-- 기초: 참가자 × 회차 점수 + 포인트 (N항, business-rules 5.0)
+--   points = Σ 문항 포인트.
+--     정답:        point_base + ROUND(point_time_bonus_max
+--                  × GREATEST(제한시간ms - elapsed_ms, 0) / 제한시간ms)
+--     오답·시간초과: 0
+--   시간 요소는 문항별 답변 시간(elapsed_ms)뿐 — 해설 열람 시간·세션 총
+--   소요시간은 어떤 지표에도 쓰지 않는다. 산식 파라미터 3종은 app_config에서
+--   읽으며(규칙 7) lib/grading.ts calcItemPoints와 동일식이다.
 -- ---------------------------------------------------------------------
 CREATE OR REPLACE VIEW v_round_score AS
+WITH cfg AS (
+  SELECT (SELECT (value)::int FROM app_config WHERE key = 'point_base')                 AS base,
+         (SELECT (value)::int FROM app_config WHERE key = 'point_time_bonus_max')       AS bonus,
+         (SELECT (value)::int FROM app_config WHERE key = 'item_time_limit_sec') * 1000 AS limit_ms
+),
+item_points AS (
+  SELECT si.session_id,
+         SUM(CASE WHEN si.is_correct AND NOT si.is_timeout
+                  THEN c.base + ROUND(c.bonus * GREATEST(c.limit_ms - COALESCE(si.elapsed_ms, c.limit_ms), 0)::numeric / c.limit_ms)
+                  ELSE 0 END)::int AS points
+  FROM quiz_session_item si
+  CROSS JOIN cfg c
+  GROUP BY si.session_id
+)
 SELECT s.participant_id,
        s.round_no,
        s.score,
        s.total_items,
        ROUND(s.score::numeric / NULLIF(s.total_items, 0) * 100, 1) AS pct,
-       s.completed_at
+       s.completed_at,
+       COALESCE(ip.points, 0) AS points
 FROM quiz_session s
+LEFT JOIN item_points ip ON ip.session_id = s.id
 WHERE s.status IN ('completed', 'expired');
 -- expired(30분 초과)도 포함한다. 미응답은 오답으로 확정되어 있으므로
 -- 점수에 이미 반영되어 있고, 제외하면 소속 평균이 왜곡된다.
+-- score·pct 컬럼은 유지한다 — 성과분석(⑪ 등)·결과 화면은 정답 수 기준이다(N항).
 
 -- ---------------------------------------------------------------------
 -- 최소 응시 회차 임계값
@@ -37,37 +61,41 @@ LANGUAGE sql STABLE AS $$
 $$;
 
 -- ---------------------------------------------------------------------
--- ① 전체 회차 누적 순위
+-- ① 전체 회차 누적 순위 (N항: 포인트 기준)
 -- ---------------------------------------------------------------------
 CREATE OR REPLACE VIEW v_rank_total AS
 WITH agg AS (
   SELECT participant_id,
          SUM(score)   AS total_score,
          COUNT(*)     AS rounds_taken,
-         SUM(total_items) AS total_possible
+         SUM(total_items) AS total_possible,
+         SUM(points)  AS total_points
   FROM v_round_score
   GROUP BY participant_id
 )
-SELECT RANK() OVER (ORDER BY a.total_score DESC) AS rank,
+SELECT RANK() OVER (ORDER BY a.total_points DESC) AS rank,
        p.nickname, u.name AS org_unit_name, d.name AS department_name,
-       a.total_score, a.rounds_taken, a.total_possible, p.id AS participant_id
+       a.total_score, a.rounds_taken, a.total_possible, p.id AS participant_id,
+       a.total_points
 FROM agg a
 JOIN participant p ON p.id = a.participant_id
 JOIN org_unit   u ON u.id = p.org_unit_id
 JOIN department d ON d.id = p.department_id
 WHERE a.rounds_taken >= fn_min_rounds()
 ORDER BY rank;
--- 동점자는 RANK()로 공동 순위(1,2,2,4). 소요시간 정렬은 쓰지 않는다.
--- (속도 경쟁은 해설을 읽지 않게 만들어 학습효과를 깎는다)
+-- 동점자는 RANK()로 공동 순위(1,2,2,4).
+-- 세션 총 소요시간·해설 열람 시간 정렬은 쓰지 않는다(N항 정밀화) —
+-- 시간 변별은 v_round_score.points(문항별 답변 시간)로만 반영된다.
 
 -- ---------------------------------------------------------------------
--- ② 회차별 점수 순위
+-- ② 회차별 순위 (N항: 포인트 기준. score·pct는 표시용으로 유지 — G10 계약)
 -- ---------------------------------------------------------------------
 CREATE OR REPLACE VIEW v_rank_round AS
 SELECT r.round_no,
-       RANK() OVER (PARTITION BY r.round_no ORDER BY r.score DESC) AS rank,
+       RANK() OVER (PARTITION BY r.round_no ORDER BY r.points DESC) AS rank,
        p.nickname, u.name AS org_unit_name, d.name AS department_name,
-       r.score, r.total_items, r.pct, p.id AS participant_id
+       r.score, r.total_items, r.pct, p.id AS participant_id,
+       r.points
 FROM v_round_score r
 JOIN participant p ON p.id = r.participant_id
 JOIN org_unit   u ON u.id = p.org_unit_id
@@ -75,45 +103,49 @@ JOIN department d ON d.id = p.department_id
 ORDER BY r.round_no, rank;
 
 -- ---------------------------------------------------------------------
--- ③ 평균 점수 순위 (누적과 동일한 최소 회차 조건 적용)
+-- ③ 평균 포인트 순위 (누적과 동일한 최소 회차 조건 적용, N항)
 -- ---------------------------------------------------------------------
 CREATE OR REPLACE VIEW v_rank_average AS
 WITH agg AS (
   SELECT participant_id,
          COUNT(*) AS rounds_taken,
          ROUND(AVG(pct), 1) AS avg_pct,
-         SUM(score) AS total_score
+         SUM(score) AS total_score,
+         ROUND(AVG(points), 1) AS avg_points
   FROM v_round_score
   GROUP BY participant_id
 )
-SELECT RANK() OVER (ORDER BY a.avg_pct DESC, a.rounds_taken DESC) AS rank,
+SELECT RANK() OVER (ORDER BY a.avg_points DESC, a.rounds_taken DESC) AS rank,
        p.nickname, u.name AS org_unit_name, d.name AS department_name,
-       a.avg_pct, a.rounds_taken, p.id AS participant_id
+       a.avg_pct, a.rounds_taken, p.id AS participant_id,
+       a.avg_points
 FROM agg a
 JOIN participant p ON p.id = a.participant_id
 JOIN org_unit   u ON u.id = p.org_unit_id
 JOIN department d ON d.id = p.department_id
 WHERE a.rounds_taken >= fn_min_rounds()
 ORDER BY rank;
--- 동점 시 응시 회차 많은 쪽 우선 — 지속 참여를 보상한다.
+-- 동점 시 응시 회차 많은 쪽 우선 — 지속 참여를 보상한다(5.2).
 
 -- ---------------------------------------------------------------------
 -- ④ 부서 순위 (결정④: 참여자 3명 이상)
---    지표는 평균 정답률. 정원 데이터가 없으므로 참여율은 쓰지 않는다.
+--    지표는 평균 포인트(N항). 정원 데이터가 없으므로 참여율은 쓰지 않는다.
 -- ---------------------------------------------------------------------
 CREATE OR REPLACE VIEW v_rank_department AS
 WITH agg AS (
   SELECT p.department_id,
          COUNT(DISTINCT r.participant_id) AS participants,
          COUNT(*)                         AS sessions,
-         ROUND(AVG(r.pct), 1)             AS avg_pct
+         ROUND(AVG(r.pct), 1)             AS avg_pct,
+         ROUND(AVG(r.points), 1)          AS avg_points
   FROM v_round_score r
   JOIN participant p ON p.id = r.participant_id
   GROUP BY p.department_id
 )
-SELECT RANK() OVER (ORDER BY a.avg_pct DESC, a.participants DESC) AS rank,
+SELECT RANK() OVER (ORDER BY a.avg_points DESC, a.participants DESC) AS rank,
        d.name AS department_name, u.name AS org_unit_name,
-       a.participants, a.sessions, a.avg_pct, d.id AS department_id
+       a.participants, a.sessions, a.avg_pct, d.id AS department_id,
+       a.avg_points
 FROM agg a
 JOIN department d ON d.id = a.department_id
 JOIN org_unit   u ON u.id = d.org_unit_id
@@ -123,19 +155,22 @@ ORDER BY rank;
 
 -- ---------------------------------------------------------------------
 -- ⑤ 소속 순위 (선택 노출. 부서 순위가 3명 미만으로 대부분 제외될 경우 대안)
+--    지표는 평균 포인트(N항). F항에 따라 refresh-rankings가 함께 적재한다.
 -- ---------------------------------------------------------------------
 CREATE OR REPLACE VIEW v_rank_org_unit AS
 WITH agg AS (
   SELECT p.org_unit_id,
          COUNT(DISTINCT r.participant_id) AS participants,
-         ROUND(AVG(r.pct), 1)             AS avg_pct
+         ROUND(AVG(r.pct), 1)             AS avg_pct,
+         ROUND(AVG(r.points), 1)          AS avg_points
   FROM v_round_score r
   JOIN participant p ON p.id = r.participant_id
   GROUP BY p.org_unit_id
 )
-SELECT RANK() OVER (ORDER BY a.avg_pct DESC, a.participants DESC) AS rank,
+SELECT RANK() OVER (ORDER BY a.avg_points DESC, a.participants DESC) AS rank,
        u.name AS org_unit_name, c.name AS category_name,
-       a.participants, a.avg_pct, u.id AS org_unit_id
+       a.participants, a.avg_pct, u.id AS org_unit_id,
+       a.avg_points
 FROM agg a
 JOIN org_unit     u ON u.id = a.org_unit_id
 JOIN org_category c ON c.code = u.category_code
