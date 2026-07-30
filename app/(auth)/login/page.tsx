@@ -65,11 +65,8 @@ export default function LoginPage() {
               </div>
             </div>
             <div className="flex flex-col gap-1">
-              <div className="text-[13px] font-extrabold tracking-[0.14em] text-gb-gold">
-                HRDK
-              </div>
               <h1 className="text-[26px] font-extrabold tracking-[-0.01em] text-white">
-                안전 골든벨 퀴즈 리그
+                HRDK 안전 골든벨 퀴즈 리그
               </h1>
               <div className="text-[15px] font-semibold tracking-[0.04em] text-gb-text-strong-sub">
                 안전 이룸, 함께 해냄

@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "안전 골든벨 퀴즈 리그",
+  title: "HRDK 안전 골든벨 퀴즈 리그",
   description: "안전 이룸, 함께 해냄",
 };
 
