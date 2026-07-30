@@ -93,6 +93,7 @@ res { isCorrect, isTimeout, correctAnswerLabel, explanation, legalRef,
 ### `GET /api/rounds/[no]/result`
 → `{ score, totalItems, pct, points, roundRank, items: [{ seq, itemCode, isCorrect, isTimeout, stem, correctAnswerLabel, explanation }] }`
 - `points` = 회차 포인트(business-rules 5.0). `roundRank`는 포인트 기준 순위다.
+- 세션이 없으면 `404 NOT_FOUND`. 아직 진행 중이면 `409 IN_PROGRESS` — 클라이언트는 응시 화면으로 이동한다(결과는 완료 후에만, business-rules 3.5).
 
 ### `GET /api/rounds/[no]/review`
 종료 회차 전체 문항·정답·해설. 미종료 시 `403 ROUND_NOT_CLOSED`.
