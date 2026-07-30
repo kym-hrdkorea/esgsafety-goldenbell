@@ -13,6 +13,7 @@ import {
 } from "@/lib/grading";
 import {
   apiError,
+  expireIfIdle,
   explainExtras,
   loadSession,
   parseRoundNo,
@@ -56,8 +57,10 @@ export async function POST(
   }
 
   try {
-    const session = await loadSession(pid, no);
+    let session = await loadSession(pid, no);
     if (!session) return apiError(404, "NOT_FOUND");
+    // 30분 방치면 만료 확정 후 409 — 만료 후 제출은 받지 않는다 (3.4, K항)
+    session = await expireIfIdle(session);
     if (session.status !== "in_progress") {
       return apiError(409, "ALREADY_COMPLETED", MSG.alreadyCompleted, {
         status: session.status,

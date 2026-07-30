@@ -5,6 +5,7 @@ import { getParticipantId } from "@/lib/session";
 import { calcItemPoints, type ItemType } from "@/lib/grading";
 import {
   apiError,
+  expireIfIdle,
   explainExtras,
   loadSession,
   parseRoundNo,
@@ -25,8 +26,15 @@ export async function GET(
   if (no === null) return apiError(404, "NOT_FOUND");
 
   try {
-    const session = await loadSession(pid, no);
+    let session = await loadSession(pid, no);
     if (!session) return apiError(404, "NOT_FOUND");
+    session = await expireIfIdle(session); // 30분 방치 lazy 만료 (business-rules 3.4)
+    if (session.status === "expired") {
+      // 이어하기 불허 — 만료 세션의 문항 접근은 410 (api-contract)
+      return apiError(410, "SESSION_EXPIRED", MSG.expired, {
+        status: session.status,
+      });
+    }
     if (session.status !== "in_progress") {
       return apiError(409, "ALREADY_COMPLETED", MSG.alreadyCompleted, {
         status: session.status,

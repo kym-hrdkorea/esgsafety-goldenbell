@@ -5,6 +5,7 @@ import { getParticipantId } from "@/lib/session";
 import { shuffledIndices, randomSeed } from "@/lib/shuffle";
 import {
   apiError,
+  expireIfIdle,
   loadRound,
   loadSession,
   parseRoundNo,
@@ -51,8 +52,10 @@ export async function POST(
     }
 
     // 1인 1회차 1회 — 기존 세션이 있으면 새로 만들지 않는다 (C1·C2)
-    const existing = await loadSession(pid, no);
+    let existing = await loadSession(pid, no);
     if (existing) {
+      // 30분 방치 세션은 재개 대신 만료 확정 → 아래 409로 결과 화면 유도 (F2, K항)
+      existing = await expireIfIdle(existing);
       if (existing.status === "in_progress") {
         return sessionPayload(existing, round.theme);
       }
@@ -82,7 +85,7 @@ export async function POST(
       .from("quiz_session")
       .insert({ participant_id: pid, round_no: no, total_items: items.length })
       .select(
-        "id, participant_id, round_no, status, current_index, total_items, score"
+        "id, participant_id, round_no, status, current_index, total_items, score, last_activity_at"
       )
       .single();
 

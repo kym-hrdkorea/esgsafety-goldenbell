@@ -53,7 +53,10 @@ export default function QuizPage({
   const [orderSeq, setOrderSeq] = useState<number[]>([]); // ORDER: 표시 위치, 탭 순서
   const [shortText, setShortText] = useState(""); // SHORT
   const [tried, setTried] = useState(false);
-  const [blocked, setBlocked] = useState<string | null>(null);
+  const [blocked, setBlocked] = useState<{
+    message: string;
+    action: "home" | "result";
+  } | null>(null);
   const [busy, setBusy] = useState(false);
   const submittingRef = useRef(false);
   const currentSeqRef = useRef(-1); // 지연된 응답·재시도가 다른 문항 화면을 덮지 않게 하는 가드
@@ -73,6 +76,16 @@ export default function QuizPage({
 
   const fetchItem = useCallback(async () => {
     const res = await fetch(`/api/rounds/${no}/item`);
+    if (res.status === 410) {
+      // 30분 방치 만료 — 이어하기 불허, 결과 화면으로 안내 (business-rules 3.4, F2)
+      const body = await res.json();
+      setBlocked({ message: body.message, action: "result" });
+      return;
+    }
+    if (res.status === 409) {
+      router.replace(`/round/${no}/result`);
+      return;
+    }
     if (!res.ok) throw await res.json();
     const data: ItemPayload = await res.json();
     clearRetries(); // 이전 문항의 자동 제출 재시도는 문항 전환과 함께 폐기
@@ -86,7 +99,7 @@ export default function QuizPage({
     } else {
       setExplain(null);
     }
-  }, [no]);
+  }, [no, router]);
 
   useEffect(() => {
     (async () => {
@@ -105,14 +118,17 @@ export default function QuizPage({
         }
         if (!res.ok) {
           const body = await res.json();
-          setBlocked(body.message);
+          setBlocked({ message: body.message, action: "home" });
           return;
         }
         const s = await res.json();
         setSession(s);
         await fetchItem();
       } catch {
-        setBlocked("문제가 발생했습니다. 잠시 후 다시 시도해 주세요.");
+        setBlocked({
+          message: "문제가 발생했습니다. 잠시 후 다시 시도해 주세요.",
+          action: "home",
+        });
       }
     })();
   }, [no, router, fetchItem]);
@@ -133,6 +149,11 @@ export default function QuizPage({
               : { seq: item.seq, submitted: payload }
           ),
         });
+        if (res.status === 409) {
+          // 완료·만료 세션의 제출 — 결과 화면으로 (addendum K항)
+          router.replace(`/round/${no}/result`);
+          return true;
+        }
         if (!res.ok) {
           submittingRef.current = false;
           return false;
@@ -154,7 +175,7 @@ export default function QuizPage({
         setBusy(false);
       }
     },
-    [item, no]
+    [item, no, router]
   );
 
   const ready = item
@@ -204,6 +225,11 @@ export default function QuizPage({
     setBusy(true);
     try {
       const res = await fetch(`/api/rounds/${no}/next`, { method: "POST" });
+      if (res.status === 409) {
+        // 만료·완료 세션 — 결과 화면으로 (K항)
+        router.replace(`/round/${no}/result`);
+        return;
+      }
       if (!res.ok) return;
       const data = await res.json();
       if (data.isCompleted) {
@@ -220,14 +246,18 @@ export default function QuizPage({
     return (
       <main className="mx-auto flex min-h-[calc(100dvh-10px)] w-full max-w-[640px] flex-col items-center justify-center gap-6 px-5 text-center">
         <p className="text-[16px] leading-[1.65] text-gb-text-body">
-          {blocked}
+          {blocked.message}
         </p>
         <button
           type="button"
           className="gb-cta max-w-[320px]"
-          onClick={() => router.push("/")}
+          onClick={() =>
+            router.push(
+              blocked.action === "result" ? `/round/${no}/result` : "/"
+            )
+          }
         >
-          홈으로
+          {blocked.action === "result" ? "결과 보기" : "홈으로"}
         </button>
       </main>
     );

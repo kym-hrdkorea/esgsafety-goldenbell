@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/lib/db";
 import { getParticipantId } from "@/lib/session";
-import { apiError, loadSession, parseRoundNo } from "@/lib/quiz";
+import { apiError, expireIfIdle, loadSession, parseRoundNo } from "@/lib/quiz";
 
 export const dynamic = "force-dynamic";
 
@@ -17,8 +17,9 @@ export async function POST(
   if (no === null) return apiError(404, "NOT_FOUND");
 
   try {
-    const session = await loadSession(pid, no);
+    let session = await loadSession(pid, no);
     if (!session) return apiError(404, "NOT_FOUND");
+    session = await expireIfIdle(session); // 30분 방치 lazy 만료 (business-rules 3.4)
 
     // 완료는 12번째 answer 시점에 이미 처리됨 — next는 상태를 바꾸지 않는다 (D항, 멱등)
     if (session.status === "completed") {
