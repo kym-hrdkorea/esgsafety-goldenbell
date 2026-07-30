@@ -17,3 +17,6 @@ next-env.d.ts
 
 # local-only settings
 .claude/settings.local.json
+
+# 외부 에이전트 산출물 (Codex 감사 등)
+.codex/
