@@ -78,18 +78,21 @@ req { seq, submitted }
      // ORDER : [0,2,1,3] (화면 표시 위치 배열)
      // SHORT : "아차사고"
 res { isCorrect, isTimeout, correctAnswerLabel, explanation, legalRef,
-      score, seq, isLast }
+      score, points, seq, isLast }
 ```
 - 서버가 `choice_order`로 원본 index 변환 후 채점.
 - 45초 초과면 `isTimeout: true, isCorrect: false`이되 해설은 정상 반환.
 - 이미 답한 문항이면 기존 결과 반환(멱등).
+- `points` = 이 문항에서 얻은 포인트(business-rules 5.0). 정답 배너 `+{points} SCORE` 표기용.
+  해설 단계의 `GET /item` 응답에도 동일하게 포함한다(새로고침 복구).
 
 ### `POST /api/rounds/[no]/next`
 `current_index` 증가, `last_activity_at` 갱신.
 → `{ currentIndex, isCompleted }`
 
 ### `GET /api/rounds/[no]/result`
-→ `{ score, totalItems, pct, roundRank, items: [{ seq, itemCode, isCorrect, isTimeout, stem, correctAnswerLabel, explanation }] }`
+→ `{ score, totalItems, pct, points, roundRank, items: [{ seq, itemCode, isCorrect, isTimeout, stem, correctAnswerLabel, explanation }] }`
+- `points` = 회차 포인트(business-rules 5.0). `roundRank`는 포인트 기준 순위다.
 
 ### `GET /api/rounds/[no]/review`
 종료 회차 전체 문항·정답·해설. 미종료 시 `403 ROUND_NOT_CLOSED`.
@@ -97,21 +100,21 @@ res { isCorrect, isTimeout, correctAnswerLabel, explanation, legalRef,
 ## 대시보드
 
 ### `GET /api/dashboard`
-순위 목록 4종은 `ranking_snapshot`만 조회.
+순위 목록 4종은 `ranking_snapshot`만 조회. **순위 산정 기준은 포인트**(business-rules 5.0, N항).
 `me.totalRank`/`me.departmentRank`는 뷰에서 **본인 행만** 조회 허용 → addendum B항
 `minRoundsRequired`는 `fn_min_rounds()` 결과 → addendum C항
 ```
 {
-  me: { nickname, totalScore, roundsTaken, totalRank|null, departmentRank|null,
+  me: { nickname, totalScore, totalPoints, roundsTaken, totalRank|null, departmentRank|null,
         rankEligible: boolean, minRoundsRequired },
-  total:      [{ rank, nickname, orgUnitName, totalScore, roundsTaken }],
-  average:    [{ rank, nickname, orgUnitName, avgPct, roundsTaken }],
-  department: [{ rank, departmentName, orgUnitName, participants, avgPct }],
+  total:      [{ rank, nickname, orgUnitName, totalPoints, roundsTaken }],
+  average:    [{ rank, nickname, orgUnitName, avgPoints, roundsTaken }],
+  department: [{ rank, departmentName, orgUnitName, participants, avgPoints }],
   computedAt
 }
 ```
 ### `GET /api/dashboard/round/[no]`
-→ `[{ rank, nickname, orgUnitName, score, pct }]`
+→ `[{ rank, nickname, orgUnitName, points, score, pct }]`
 
 ## 관리자
 ```

@@ -31,8 +31,10 @@
 - `lib/grading.ts` — OX / MC4 / ORDER / SHORT
 - `components/quiz/` 4종 컴포넌트. ORDER는 **탭 순서 배지** 방식(드래그 아님)
 - SHORT 정규화: trim → 공백제거 → NFKC → 배열 포함 검사
+- 문항 포인트 계산(`business-rules 5.0`, N항): answer·item 응답에 `points` 포함,
+  정답 배너 `+{points} SCORE`. `app_config`에 `point_base`(100)·`point_time_bonus_max`(100) INSERT(DML)
 - **완료 조건**: `lib/grading.test.ts` 단위테스트 통과.
-  각 유형 최소 3케이스(정답/오답/경계) + MC4 셔플 변환 케이스 포함
+  각 유형 최소 3케이스(정답/오답/경계) + MC4 셔플 변환 케이스 + 포인트 산식 케이스 포함
 
 ## T04 — 서버 권위 타이머
 - `served_at` 최초 서빙 시 1회 기록, **재갱신 금지**
@@ -42,10 +44,11 @@
   50초 대기 후 제출하면 시간초과로 처리된다
 
 ## T05 — 회차 완료 + 결과 화면
+- ★ **착수 전**: `db/05_views.sql` 순위 뷰를 포인트 기준으로 교체(SQL 제시 → 명시적 DDL 허가 → 1회 실행, N항)
 - 12문항 종료 시 `status='completed'`, `score` 확정
-- `GET /api/rounds/[no]/result`, 화면 `/round/[no]/result`
+- `GET /api/rounds/[no]/result`(포인트 포함), 화면 `/round/[no]/result` — `획득 포인트 {points}P` 병기
 - 오답만 보기 토글
-- **완료 조건**: 12문항 완주 후 점수·정답률·문항별 결과가 정확히 표시된다
+- **완료 조건**: 12문항 완주 후 점수·정답률·포인트·문항별 결과가 정확히 표시된다
 
 ## T06 — 세션 만료 처리
 - 30분 방치 → `expired`, 미응답 문항 전부 timeout 확정
@@ -65,12 +68,13 @@
 
 ## T09 — 순위 집계
 - `POST /api/cron/refresh-rankings` — 뷰 → `ranking_snapshot` 적재, 60초 중복 스킵
+- 순위 4종은 **포인트 기준**(business-rules 5.0·5.2, T05 전 교체된 뷰 사용)
 - Vercel Cron 등록 + `CRON_SECRET` 검증
 - **완료 조건**: 세션 완료 후 60초 내 snapshot 갱신. 2회 연속 호출 시 두 번째는 스킵
 
 ## T10 — 대시보드
 - `GET /api/dashboard` (snapshot만 조회), `GET /api/dashboard/round/[no]`
-- 순위 4종 탭, `RankTable` 5행 + 더보기 20행, 공동 순위 표시
+- 순위 4종 탭(**포인트 기준**, 표 헤더는 copy.md 개정본), `RankTable` 5행 + 더보기 20행, 공동 순위 표시
 - 내 순위·우리 부서 순위 카드(순위권 밖에도 표시)
 - **완료 조건**: 4개 탭 모두 동작. 3회 미달 시 "3회 이상 참여하면 반영" 안내 노출
 

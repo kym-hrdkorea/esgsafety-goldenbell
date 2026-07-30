@@ -173,7 +173,9 @@ T00 완료 조건: pnpm dev 기동 후 /api/health 가 DB에서 app_config 1건�
 8. PIN 이 평문으로 저장되거나 로그에 남지 않는가
 9. 제한시간·최소 회차 값이 하드코딩되지 않고 app_config 에서 오는가
 10. 중복 제출이 멱등하게 처리되는가
-11. 순위 정렬에 소요시간이 쓰이지 않는가
+11. 포인트의 시간 요소가 문항별 답변 시간(served_at→answered_at)만 반영하는가 —
+    세션 총 소요시간·해설 열람 시간이 어떤 점수·순위에도 쓰이지 않고,
+    포인트 산식 값(point_base, point_time_bonus_max)이 app_config에서 오는가
 12. 대시보드가 뷰를 직접 조회하지 않고 ranking_snapshot 만 읽는가
 
 그리고 실제로 실행해 확인해 주세요.

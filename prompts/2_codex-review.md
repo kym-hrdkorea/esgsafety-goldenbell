@@ -15,7 +15,8 @@
 4. `db/05_views.sql`의 순위 로직이 `business-rules.md` 5절과 정확히 일치하는가
    - 특히 `fn_min_rounds()`의 "공개 회차 2개 이하면 조건 미적용" 처리
    - 부서 순위의 참여자 3명 이상 필터
-   - 동점 처리에 소요시간이 쓰이지 않는지
+   - 순위 산정이 포인트 기준인지(business-rules 5.0, addendum N항),
+     세션 총 소요시간·해설 열람 시간이 어디에도 쓰이지 않는지
 5. `db/04_seed_items.sql`의 `answer` 자료형이 `item_type`별 규약(business-rules 4절)과 맞는가
    - `OX`=boolean / `MC4`=0~3 / `ORDER`=원본 index 배열 / `SHORT`=문자열 배열
 
