@@ -28,7 +28,8 @@ err  401 INVALID_CREDENTIALS, 423 LOCKED { lockedUntil }
 ```
 
 ### `POST /api/auth/logout` → `204`
-### `GET /api/me` → `{ nickname, orgUnitName, departmentName, totalScore, roundsTaken }`
+### `GET /api/me` → `{ nickname, orgUnitName, departmentName, totalScore, roundsTaken, totalRank }`
+- `totalRank` = 포인트 기준 누적 순위(홈 요약 카드용). 본인 행 1건만 `v_rank_total` 직접 조회 — addendum B항. 순위 미대상(미응시·최소 회차 미달)이면 `null`.
 
 ## 회차
 
