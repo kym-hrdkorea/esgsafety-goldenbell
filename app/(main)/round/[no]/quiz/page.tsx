@@ -4,6 +4,9 @@ import { use, useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Timer from "@/components/quiz/Timer";
 import Mc4Item from "@/components/quiz/Mc4Item";
+import OxItem from "@/components/quiz/OxItem";
+import OrderItem from "@/components/quiz/OrderItem";
+import ShortItem from "@/components/quiz/ShortItem";
 import Explanation, { type ExplainData } from "@/components/quiz/Explanation";
 
 type ItemPayload = {
@@ -25,6 +28,13 @@ type SessionInfo = {
   theme: string;
 };
 
+const TYPE_LABEL = {
+  MC4: "4지선다",
+  OX: "O / X",
+  ORDER: "순서배열",
+  SHORT: "단답",
+} as const;
+
 // 진행 상태는 전부 서버(quiz_session)에 있다. 브라우저 스토리지 사용 금지 (규칙 5)
 export default function QuizPage({
   params,
@@ -38,19 +48,37 @@ export default function QuizPage({
   const [item, setItem] = useState<ItemPayload | null>(null);
   const [explain, setExplain] = useState<ExplainData | null>(null);
   const [isLast, setIsLast] = useState(false);
-  const [selected, setSelected] = useState<number | null>(null);
+  // 유형별 입력 상태 (문항 전환 시 초기화)
+  const [selected, setSelected] = useState<number | null>(null); // MC4·OX
+  const [orderSeq, setOrderSeq] = useState<number[]>([]); // ORDER: 표시 위치, 탭 순서
+  const [shortText, setShortText] = useState(""); // SHORT
   const [tried, setTried] = useState(false);
   const [blocked, setBlocked] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const submittingRef = useRef(false);
+  const currentSeqRef = useRef(-1); // 지연된 응답·재시도가 다른 문항 화면을 덮지 않게 하는 가드
+  const retryTimersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
+
+  const clearRetries = () => {
+    retryTimersRef.current.forEach((t) => clearTimeout(t));
+    retryTimersRef.current = [];
+  };
+
+  const resetInputs = () => {
+    setSelected(null);
+    setOrderSeq([]);
+    setShortText("");
+    setTried(false);
+  };
 
   const fetchItem = useCallback(async () => {
     const res = await fetch(`/api/rounds/${no}/item`);
     if (!res.ok) throw await res.json();
     const data: ItemPayload = await res.json();
+    clearRetries(); // 이전 문항의 자동 제출 재시도는 문항 전환과 함께 폐기
+    currentSeqRef.current = data.seq;
     setItem(data);
-    setSelected(null);
-    setTried(false);
+    resetInputs();
     submittingRef.current = false;
     if (data.phase === "explained") {
       setExplain(data as unknown as ExplainData);
@@ -70,6 +98,11 @@ export default function QuizPage({
           router.replace("/login");
           return;
         }
+        if (res.status === 409) {
+          // 완료·만료 세션은 결과 화면으로 (business-rules 3.1, addendum K항)
+          router.replace(`/round/${no}/result`);
+          return;
+        }
         if (!res.ok) {
           const body = await res.json();
           setBlocked(body.message);
@@ -86,8 +119,8 @@ export default function QuizPage({
 
   // 제출(수동·자동 공통). 판정은 서버가 한다 — 시간초과 여부도 서버 응답을 따른다
   const submit = useCallback(
-    async (displayIndex: number | null) => {
-      if (!item || submittingRef.current) return;
+    async (payload: unknown) => {
+      if (!item || submittingRef.current) return false;
       submittingRef.current = true;
       setBusy(true);
       try {
@@ -95,18 +128,28 @@ export default function QuizPage({
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(
-            displayIndex === null
+            payload === undefined
               ? { seq: item.seq }
-              : { seq: item.seq, submitted: displayIndex }
+              : { seq: item.seq, submitted: payload }
           ),
         });
         if (!res.ok) {
           submittingRef.current = false;
-          return;
+          return false;
         }
         const data = await res.json();
+        // 문항이 이미 전환됐다면 이전 문항의 지연 응답 — 현재 화면을 덮지 않는다
+        if (data.seq !== currentSeqRef.current) {
+          submittingRef.current = false;
+          return true;
+        }
         setExplain(data);
         setIsLast(data.isLast === true);
+        return true;
+      } catch {
+        // 네트워크 오류 등 예외에서도 제출 경로가 막히지 않아야 한다 (D6 전제)
+        submittingRef.current = false;
+        return false;
       } finally {
         setBusy(false);
       }
@@ -114,18 +157,46 @@ export default function QuizPage({
     [item, no]
   );
 
+  const ready = item
+    ? item.itemType === "ORDER"
+      ? orderSeq.length === (item.choices?.length ?? 0)
+      : item.itemType === "SHORT"
+        ? shortText.trim().length > 0
+        : selected !== null
+    : false;
+
   const onSubmitClick = () => {
     if (!item) return;
-    if (selected === null) {
+    if (!ready) {
       setTried(true);
       return;
     }
-    void submit(selected);
+    const payload =
+      item.itemType === "MC4"
+        ? selected
+        : item.itemType === "OX"
+          ? selected === 0 // 0=O(true), 1=X(false)
+          : item.itemType === "ORDER"
+            ? orderSeq
+            : shortText;
+    void submit(payload);
   };
 
-  // 타이머 0초 → 자동 제출. 서버 판정이 시간초과를 확정한다 (D5)
+  // 타이머 0초 → 자동 제출(payload 없음 → 서버가 시간초과 판정, D5).
+  // 서버 시계가 클라이언트보다 뒤면 400이 나므로 잠시 후 재시도한다.
+  // 재시도는 만료 당시 문항에만 유효 — 문항이 전환되면 발사하지 않는다.
   const onExpire = useCallback(() => {
-    setTimeout(() => void submit(null), 400);
+    const seqAtExpire = currentSeqRef.current;
+    let attempt = 0;
+    const fire = async () => {
+      if (currentSeqRef.current !== seqAtExpire) return;
+      attempt += 1;
+      const ok = await submit(undefined);
+      if (!ok && attempt < 4 && currentSeqRef.current === seqAtExpire) {
+        retryTimersRef.current.push(setTimeout(fire, 1200));
+      }
+    };
+    retryTimersRef.current.push(setTimeout(fire, 800));
   }, [submit]);
 
   const onNext = async () => {
@@ -231,20 +302,14 @@ export default function QuizPage({
           <>
             <div className="flex flex-col gap-2.5">
               <div className="self-start rounded-[2px] bg-gb-gold px-2 py-1 text-[11px] font-bold tracking-[0.12em] text-gb-bg-screen">
-                {item.itemType === "MC4"
-                  ? "4지선다"
-                  : item.itemType === "OX"
-                    ? "O / X"
-                    : item.itemType === "ORDER"
-                      ? "순서배열"
-                      : "단답"}
+                {TYPE_LABEL[item.itemType]}
               </div>
               <h1 className="m-0 text-[22px] leading-[1.52] font-bold tracking-[-0.012em] text-white [text-wrap:pretty]">
                 {item.stem}
               </h1>
             </div>
 
-            {item.itemType === "MC4" && item.choices ? (
+            {item.itemType === "MC4" && item.choices && (
               <Mc4Item
                 choices={item.choices}
                 selected={selected}
@@ -253,15 +318,48 @@ export default function QuizPage({
                   setTried(false);
                 }}
               />
-            ) : (
-              // T03에서 4종 완성 (M항). 45초 경과 시 자동으로 시간초과 해설로 넘어간다
-              <p className="text-[15px] leading-[1.6] text-gb-text-secondary">
-                이 유형은 아직 구현되지 않았습니다
-              </p>
+            )}
+            {item.itemType === "OX" && (
+              <OxItem
+                selected={selected}
+                onSelect={(i) => {
+                  setSelected(i);
+                  setTried(false);
+                }}
+              />
+            )}
+            {item.itemType === "ORDER" && item.choices && (
+              <OrderItem
+                choices={item.choices}
+                orderSeq={orderSeq}
+                onTap={(i) => {
+                  setOrderSeq((prev) =>
+                    prev.includes(i)
+                      ? prev.filter((x) => x !== i)
+                      : [...prev, i]
+                  );
+                  setTried(false);
+                }}
+                onReset={() => setOrderSeq([])}
+              />
+            )}
+            {item.itemType === "SHORT" && (
+              <ShortItem
+                value={shortText}
+                onChange={(v) => {
+                  setShortText(v);
+                  setTried(false);
+                }}
+              />
             )}
           </>
         ) : (
-          <Explanation data={explain!} stem={item.stem} choices={item.choices} />
+          <Explanation
+            data={explain!}
+            stem={item.stem}
+            itemType={item.itemType}
+            choices={item.choices}
+          />
         )}
       </div>
 
@@ -271,9 +369,7 @@ export default function QuizPage({
           <>
             <div
               className="flex min-h-[18px] items-center gap-1.5 text-[13px] font-bold text-gb-yellow"
-              style={{
-                visibility: tried && selected === null ? "visible" : "hidden",
-              }}
+              style={{ visibility: tried && !ready ? "visible" : "hidden" }}
             >
               <span className="font-gb-num font-bold">!</span>
               <span>답을 선택해 주세요</span>
@@ -281,14 +377,15 @@ export default function QuizPage({
             <button
               type="button"
               onClick={onSubmitClick}
-              disabled={busy || item.itemType !== "MC4"}
-              className="w-full min-h-[56px] cursor-pointer rounded text-[19px] font-extrabold tracking-[0.02em] active:translate-x-1 active:translate-y-1"
+              disabled={busy}
+              className={`w-full min-h-[56px] cursor-pointer rounded text-[19px] font-extrabold tracking-[0.02em] active:translate-x-1 active:translate-y-1 active:shadow-gb-pressed ${
+                ready && !busy ? "shadow-gb-cta" : ""
+              }`}
               style={
-                selected !== null && !busy
+                ready && !busy
                   ? {
                       background: "#FFD400",
                       border: "3px solid #FFE873",
-                      boxShadow: "5px 5px 0 #6B5200",
                       color: "#12172b",
                     }
                   : {

@@ -2,9 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/lib/db";
 import { getConfigValue } from "@/lib/config";
 import { getParticipantId } from "@/lib/session";
-import { answerLabel, type ItemType } from "@/lib/grading";
+import { calcItemPoints, type ItemType } from "@/lib/grading";
 import {
   apiError,
+  explainExtras,
   loadSession,
   parseRoundNo,
   MSG,
@@ -39,7 +40,7 @@ export async function GET(
     const { data: si, error } = await db
       .from("quiz_session_item")
       .select(
-        "id, seq, choice_order, served_at, answered_at, submitted, is_correct, is_timeout, item:item_id(item_type, stem, choices, answer, explanation, legal_ref)"
+        "id, seq, choice_order, served_at, answered_at, submitted, is_correct, is_timeout, elapsed_ms, item:item_id(item_type, stem, choices, answer, explanation, legal_ref)"
       )
       .eq("session_id", session.id)
       .eq("seq", session.current_index)
@@ -113,29 +114,31 @@ export async function GET(
       return NextResponse.json(base);
     }
 
-    // 해설 단계: 새로고침 복구를 위해 정답·해설을 포함한다 (A항, I1-b)
-    const submittedOriginal = si.submitted as number | null;
+    // 해설 단계: 새로고침 복구를 위해 정답·해설·포인트를 포함한다 (A항, I1-b)
+    const basePoints = await getConfigValue("point_base");
+    const timeBonusMax = await getConfigValue("point_time_bonus_max");
     return NextResponse.json({
       ...base,
       isCorrect: si.is_correct,
       isTimeout: si.is_timeout,
-      correctAnswerLabel: answerLabel(
+      ...explainExtras(
         item.item_type,
         item.answer,
         item.choices,
-        choiceOrder
+        choiceOrder,
+        si.submitted
       ),
-      correctDisplayIndex:
-        item.item_type === "MC4" && choiceOrder
-          ? choiceOrder.indexOf(item.answer as number)
-          : null,
-      submittedDisplayIndex:
-        item.item_type === "MC4" && choiceOrder && submittedOriginal !== null
-          ? choiceOrder.indexOf(submittedOriginal)
-          : null,
       explanation: item.explanation,
       legalRef: item.legal_ref,
       score: session.score,
+      points: calcItemPoints({
+        isCorrect: si.is_correct === true,
+        isTimeout: si.is_timeout,
+        elapsedMs: si.elapsed_ms ?? limitSec * 1000,
+        limitSec,
+        basePoints,
+        timeBonusMax,
+      }),
       isLast: si.seq === session.total_items - 1,
     });
   } catch (err) {

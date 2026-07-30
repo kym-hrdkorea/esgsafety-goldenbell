@@ -8,19 +8,89 @@ export type ExplainData = {
   correctAnswerLabel: string;
   correctDisplayIndex: number | null;
   submittedDisplayIndex: number | null;
+  correctOrderDisplay: number[] | null;
+  submittedOrderDisplay: number[] | null;
+  submittedText: string | null;
   explanation: string;
   legalRef: string | null;
+  points: number;
 };
 
-// 해설 단계: 배너 3종(정답·오답·시간초과) + 정답 표기 + 선택지 리캡 + 해설 + 근거.
+type RecapKind = "correct" | "wrong" | "dim";
+
+const ROW_STYLE: Record<RecapKind, React.CSSProperties> = {
+  correct: {
+    background: "#12261a",
+    borderColor: "#24B24C",
+    color: "#EAF7EE",
+    fontWeight: 700,
+  },
+  wrong: {
+    background: "#2a171a",
+    borderColor: "#E23A2E",
+    color: "#F5D9D6",
+    fontWeight: 500,
+  },
+  dim: {
+    background: "#151b30",
+    borderColor: "#232b47",
+    color: "#7A85A6",
+    fontWeight: 500,
+  },
+};
+
+const BADGE_STYLE: Record<RecapKind, React.CSSProperties> = {
+  correct: { background: "#24B24C", color: "#0b0f1d" },
+  wrong: { background: "#E23A2E", color: "#fff" },
+  dim: { background: "#232b47", color: "#5E6A8C" },
+};
+
+function RecapRow({
+  kind,
+  badge,
+  label,
+}: {
+  kind: RecapKind;
+  badge: string;
+  label: string;
+}) {
+  return (
+    <div
+      className="flex min-h-12 w-full items-center gap-2.5 rounded border-[3px] px-3 py-[11px] text-[15px] leading-[1.5]"
+      style={ROW_STYLE[kind]}
+    >
+      <span
+        className="font-gb-num flex h-7 w-7 flex-none items-center justify-center rounded-[2px] text-[15px] font-bold tabular-nums"
+        style={BADGE_STYLE[kind]}
+      >
+        {badge}
+      </span>
+      <span className="flex-1 text-left [text-wrap:pretty]">{label}</span>
+      {kind === "correct" && (
+        <span className="flex-none text-[17px] font-black text-gb-green-text">
+          ✓
+        </span>
+      )}
+      {kind === "wrong" && (
+        <span className="flex-none text-[15px] font-black text-gb-red-text">
+          ✕
+        </span>
+      )}
+    </div>
+  );
+}
+
+// 해설 단계: 배너 3종(정답·오답·시간초과) + 정답 표기 + 유형별 리캡 + 해설 + 근거.
 // 화려한 연출(링 모션)은 정답 배너에만 쓴다 — 톤 가드레일 (design/handoff.md)
 export default function Explanation({
   data,
   stem,
+  itemType,
   choices,
 }: {
   data: ExplainData;
   stem: string;
+  itemType: "OX" | "MC4" | "ORDER" | "SHORT";
   choices: string[] | null;
 }) {
   const state = data.isTimeout
@@ -28,6 +98,56 @@ export default function Explanation({
     : data.isCorrect
       ? "correct"
       : "wrong";
+
+  // 유형별 리캡 행 구성
+  let recap: { kind: RecapKind; badge: string; label: string }[] = [];
+  let myAnswerLine: string | null = null;
+
+  if (itemType === "MC4" && choices) {
+    recap = choices.map((label, i) => ({
+      kind:
+        i === data.correctDisplayIndex
+          ? "correct"
+          : state === "wrong" && i === data.submittedDisplayIndex
+            ? "wrong"
+            : "dim",
+      badge: String(i + 1),
+      label,
+    }));
+  } else if (itemType === "OX") {
+    recap = ["O", "X"].map((label, i) => ({
+      kind:
+        i === data.correctDisplayIndex
+          ? "correct"
+          : state === "wrong" && i === data.submittedDisplayIndex
+            ? "wrong"
+            : "dim",
+      badge: label,
+      label,
+    }));
+  } else if (itemType === "ORDER" && choices && data.correctOrderDisplay) {
+    // 정답 순서로 나열하고, 내 답이 어긋난 위치에 ✕ (design/handoff.md)
+    recap = data.correctOrderDisplay.map((displayIdx, pos) => {
+      const mine = data.submittedOrderDisplay?.[pos];
+      const kind: RecapKind =
+        state === "wrong" && mine !== undefined && mine !== displayIdx
+          ? "wrong"
+          : "correct";
+      return { kind, badge: String(pos + 1), label: choices[displayIdx] };
+    });
+    if (state === "wrong" && data.submittedOrderDisplay) {
+      myAnswerLine = `내 답: ${data.submittedOrderDisplay
+        .map((d) => d + 1)
+        .join(" → ")}`;
+    }
+  } else if (itemType === "SHORT") {
+    recap = [
+      { kind: "correct", badge: "✓", label: data.correctAnswerLabel },
+    ];
+    if (state === "wrong" && data.submittedText) {
+      myAnswerLine = `내 답: ${data.submittedText}`;
+    }
+  }
 
   return (
     <div className="flex flex-col gap-4">
@@ -62,7 +182,7 @@ export default function Explanation({
               정답입니다
             </div>
             <div className="font-gb-num flex items-baseline gap-1 font-bold text-gb-gold">
-              <span className="text-[16px]">+1</span>
+              <span className="text-[16px] tabular-nums">+{data.points}</span>
               <span className="text-[12px] text-gb-text-dim">SCORE</span>
             </div>
           </div>
@@ -130,70 +250,16 @@ export default function Explanation({
         </div>
       </div>
 
-      {choices && (
+      {recap.length > 0 && (
         <div className="flex flex-col gap-2">
-          {choices.map((label, i) => {
-            const kind =
-              i === data.correctDisplayIndex
-                ? "correct"
-                : state === "wrong" && i === data.submittedDisplayIndex
-                  ? "wrong"
-                  : "dim";
-            const rowStyle =
-              kind === "correct"
-                ? {
-                    background: "#12261a",
-                    borderColor: "#24B24C",
-                    color: "#EAF7EE",
-                    fontWeight: 700,
-                  }
-                : kind === "wrong"
-                  ? {
-                      background: "#2a171a",
-                      borderColor: "#E23A2E",
-                      color: "#F5D9D6",
-                      fontWeight: 500,
-                    }
-                  : {
-                      background: "#151b30",
-                      borderColor: "#232b47",
-                      color: "#7A85A6",
-                      fontWeight: 500,
-                    };
-            const badgeStyle =
-              kind === "correct"
-                ? { background: "#24B24C", color: "#0b0f1d" }
-                : kind === "wrong"
-                  ? { background: "#E23A2E", color: "#fff" }
-                  : { background: "#232b47", color: "#5E6A8C" };
-            return (
-              <div
-                key={i}
-                className="flex min-h-12 w-full items-center gap-2.5 rounded border-[3px] px-3 py-[11px] text-[15px] leading-[1.5]"
-                style={rowStyle}
-              >
-                <span
-                  className="font-gb-num flex h-7 w-7 flex-none items-center justify-center rounded-[2px] text-[15px] font-bold tabular-nums"
-                  style={badgeStyle}
-                >
-                  {i + 1}
-                </span>
-                <span className="flex-1 text-left [text-wrap:pretty]">
-                  {label}
-                </span>
-                {kind === "correct" && (
-                  <span className="flex-none text-[17px] font-black text-gb-green-text">
-                    ✓
-                  </span>
-                )}
-                {kind === "wrong" && (
-                  <span className="flex-none text-[15px] font-black text-gb-red-text">
-                    ✕
-                  </span>
-                )}
-              </div>
-            );
-          })}
+          {recap.map((row, i) => (
+            <RecapRow key={i} {...row} />
+          ))}
+          {myAnswerLine && (
+            <div className="px-0.5 pt-0.5 text-[13px] font-bold text-gb-red-text">
+              {myAnswerLine}
+            </div>
+          )}
         </div>
       )}
 

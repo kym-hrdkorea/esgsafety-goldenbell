@@ -19,21 +19,22 @@ export default function Mc4Item({
             key={i}
             type="button"
             onClick={() => onSelect(i)}
-            className="flex w-full min-h-[56px] items-center gap-3 rounded border-[3px] px-3.5 py-[13px] text-left text-[17px] leading-[1.5] break-keep active:translate-x-[3px] active:translate-y-[3px] active:shadow-gb-pressed"
+            className={`flex w-full min-h-[56px] items-center gap-3 rounded border-[3px] px-3.5 py-[13px] text-left text-[17px] leading-[1.5] break-keep active:translate-x-[3px] active:translate-y-[3px] active:shadow-gb-pressed ${
+              on
+                ? "translate-x-[2px] translate-y-[2px] shadow-[2px_2px_0_#6B5200]"
+                : "shadow-gb-card"
+            }`}
             style={
               on
                 ? {
                     background: "#FFD400",
                     borderColor: "#FFE873",
-                    boxShadow: "2px 2px 0 #6B5200",
-                    transform: "translate(2px,2px)",
                     color: "#12172b",
                     fontWeight: 700,
                   }
                 : {
                     background: "#1b2239",
                     borderColor: "#3a4468",
-                    boxShadow: "4px 4px 0 #070a16",
                     color: "#EDF0F7",
                     fontWeight: 500,
                   }

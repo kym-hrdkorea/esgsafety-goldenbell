@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getDb } from "./db";
+import { answerLabel, type ItemType } from "./grading";
 
 // 응시 API 공용 헬퍼. 회차 개방 판정은 항상 서버 시각으로 한다 (business-rules 2절).
 
@@ -78,4 +79,66 @@ export async function loadSession(
     .maybeSingle();
   if (error) throw new Error(error.message);
   return data as Session | null;
+}
+
+// 해설 단계 응답의 유형별 리캡 필드. 채점 확정 후에만 호출된다 (규칙 2).
+// submitted는 DB 저장값(원본 인덱스 공간)이다.
+export type ExplainExtras = {
+  correctAnswerLabel: string;
+  correctDisplayIndex: number | null; // MC4: 정답 화면 위치 / OX: 0=O, 1=X
+  submittedDisplayIndex: number | null;
+  correctOrderDisplay: number[] | null; // ORDER: 정답 순서(화면 위치)
+  submittedOrderDisplay: number[] | null;
+  submittedText: string | null; // SHORT: 제출 원문
+};
+
+export function explainExtras(
+  itemType: ItemType,
+  answer: unknown,
+  choices: string[] | null,
+  choiceOrder: number[] | null,
+  submitted: unknown
+): ExplainExtras {
+  const extras: ExplainExtras = {
+    correctAnswerLabel: answerLabel(itemType, answer, choices, choiceOrder),
+    correctDisplayIndex: null,
+    submittedDisplayIndex: null,
+    correctOrderDisplay: null,
+    submittedOrderDisplay: null,
+    submittedText: null,
+  };
+  switch (itemType) {
+    case "MC4":
+      if (choiceOrder) {
+        extras.correctDisplayIndex = choiceOrder.indexOf(answer as number);
+        if (typeof submitted === "number") {
+          extras.submittedDisplayIndex = choiceOrder.indexOf(submitted);
+        }
+      }
+      break;
+    case "OX":
+      extras.correctDisplayIndex = answer === true ? 0 : 1;
+      if (typeof submitted === "boolean") {
+        extras.submittedDisplayIndex = submitted ? 0 : 1;
+      }
+      break;
+    case "ORDER":
+      if (choiceOrder) {
+        extras.correctOrderDisplay = (answer as number[]).map((o) =>
+          choiceOrder.indexOf(o)
+        );
+        if (Array.isArray(submitted)) {
+          extras.submittedOrderDisplay = (submitted as number[]).map((o) =>
+            choiceOrder.indexOf(o)
+          );
+        }
+      }
+      break;
+    case "SHORT":
+      if (typeof submitted === "string") {
+        extras.submittedText = submitted;
+      }
+      break;
+  }
+  return extras;
 }

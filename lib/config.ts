@@ -17,6 +17,8 @@ const CONFIG_KEYS = [
   "login_lock_minutes",
   "admin_max_attempts",
   "admin_lock_minutes",
+  "point_base",
+  "point_time_bonus_max",
 ] as const;
 
 export type AppConfigKey = (typeof CONFIG_KEYS)[number];
