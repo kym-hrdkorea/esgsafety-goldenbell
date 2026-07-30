@@ -36,7 +36,11 @@ INSERT INTO app_config (key, value, description) VALUES
   ('login_max_attempts',        '5',    '로그인 연속 실패 허용 횟수'),
   ('login_lock_minutes',        '15',   '로그인 잠금 시간(분)'),
   ('admin_max_attempts',        '10',   '관리자 로그인 연속 실패 허용 횟수'),
-  ('admin_lock_minutes',        '10',   '관리자 로그인 잠금 시간(분)')
+  ('admin_lock_minutes',        '10',   '관리자 로그인 잠금 시간(분)'),
+  -- 아래 2건은 T03에서 승인된 DML(addendum N항)로 실DB에 먼저 추가된 키다.
+  -- P5 2회차 감사 지적에 따라 시드 파일을 실DB와 정합시킨다 (fresh DB 재구축 대비).
+  ('point_base',                '100',  '포인트 기본점(정답 시). business-rules 5.0, addendum N항'),
+  ('point_time_bonus_max',      '100',  '포인트 시간 보너스 최대치(잔여시간 비례). business-rules 5.0, addendum N항')
 ON CONFLICT (key) DO NOTHING;
 
 -- ---------------------------------------------------------------------

@@ -1,14 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/lib/db";
-import { getConfigValue } from "@/lib/config";
+import { getConfig } from "@/lib/config";
 import { getParticipantId } from "@/lib/session";
+import { calcItemPoints } from "@/lib/grading";
 import { apiError } from "@/lib/quiz";
 
 export const dynamic = "force-dynamic";
 
 // 대시보드 (business-rules 5.2·5.3).
 // 순위 목록은 ranking_snapshot만 읽는다 — .in() 화이트리스트가 F항(org_unit 미노출) 방어선이다.
-// 본인·본인 부서 순위 1건만 뷰 직접 조회를 허용한다 (addendum B항).
+// 뷰 직접 조회는 본인·본인 부서 순위 1건 + 승인된 count 2건뿐이다 (addendum B항).
+// 내 점수·포인트는 원본 테이블(quiz_session·quiz_session_item)에서 파생 계산한다 —
+// result 라우트와 동일 패턴이며 산식은 v_round_score와 동일하다 (P5 2회차 지적 반영).
 const SNAPSHOT_KINDS = ["total", "average", "department"] as const;
 type SnapshotKind = (typeof SNAPSHOT_KINDS)[number];
 
@@ -19,18 +22,29 @@ export async function GET(req: NextRequest) {
   try {
     const db = getDb();
 
-    const { data: p, error: pErr } = await db
-      .from("participant")
-      .select("nickname, department_id, department:department_id(name)")
-      .eq("id", pid)
-      .maybeSingle();
-    if (pErr) throw new Error(pErr.message);
+    const [pRes, sesRes] = await Promise.all([
+      db
+        .from("participant")
+        .select("nickname, department_id, department:department_id(name)")
+        .eq("id", pid)
+        .maybeSingle(),
+      // 내 점수·참여 회차 — 확정 세션만 (/api/me와 동일 패턴)
+      db
+        .from("quiz_session")
+        .select("id, score")
+        .eq("participant_id", pid)
+        .in("status", ["completed", "expired"]),
+    ]);
+    if (pRes.error) throw new Error(pRes.error.message);
+    if (sesRes.error) throw new Error(sesRes.error.message);
+    const p = pRes.data;
     if (!p) return apiError(401, "UNAUTHENTICATED");
+    const sessions = sesRes.data ?? [];
 
-    const [scoreRes, minRoundsRes, myRankRes, deptRankRes, snapRes, totalCntRes, deptCntRes] =
+    const cfg = await getConfig();
+
+    const [minRoundsRes, myRankRes, deptRankRes, snapRes, totalCntRes, deptCntRes, itemsRes] =
       await Promise.all([
-        // 내 점수·포인트·참여 회차 — 순위 뷰와 동일한 원천(v_round_score)이라 집계가 어긋나지 않는다
-        db.from("v_round_score").select("score, points").eq("participant_id", pid),
         // 최소 회차는 항상 fn_min_rounds() — app_config 직접 읽기 금지 (addendum C항)
         db.rpc("fn_min_rounds"),
         db.from("v_rank_total").select("rank").eq("participant_id", pid).maybeSingle(),
@@ -46,8 +60,18 @@ export async function GET(req: NextRequest) {
         // 분모(내 순위 카드 "n위 / 전체") — 순위 대상 인원·부서 수
         db.from("v_rank_total").select("participant_id", { count: "exact", head: true }),
         db.from("v_rank_department").select("department_id", { count: "exact", head: true }),
+        // 내 포인트 파생 재료 — 원본 테이블에서 읽는다 (뷰 아님)
+        sessions.length
+          ? db
+              .from("quiz_session_item")
+              .select("is_correct, is_timeout, elapsed_ms")
+              .in(
+                "session_id",
+                sessions.map((s) => s.id)
+              )
+          : Promise.resolve({ data: [], error: null }),
       ]);
-    for (const r of [scoreRes, minRoundsRes, myRankRes, deptRankRes, snapRes, totalCntRes, deptCntRes]) {
+    for (const r of [minRoundsRes, myRankRes, deptRankRes, snapRes, totalCntRes, deptCntRes, itemsRes]) {
       if (r.error) throw new Error(r.error.message);
     }
     // config 행 유실 시 함수가 null을 반환한다 — 조용히 "조건 없음"이 되면 안 된다
@@ -55,7 +79,24 @@ export async function GET(req: NextRequest) {
       throw new Error("fn_min_rounds()가 null을 반환했습니다");
     }
 
-    const roundsTaken = (scoreRes.data ?? []).length;
+    // 회차 포인트 합 = Σ 문항 포인트 (business-rules 5.0). 미서빙 문항은
+    // elapsed_ms NULL → 제한시간으로 간주(v_round_score의 COALESCE와 동일)하되
+    // 정답이 아니므로 어차피 0P다.
+    const totalPoints = (itemsRes.data ?? []).reduce(
+      (sum, si) =>
+        sum +
+        calcItemPoints({
+          isCorrect: si.is_correct === true,
+          isTimeout: si.is_timeout,
+          elapsedMs: si.elapsed_ms ?? cfg.item_time_limit_sec * 1000,
+          limitSec: cfg.item_time_limit_sec,
+          basePoints: cfg.point_base,
+          timeBonusMax: cfg.point_time_bonus_max,
+        }),
+      0
+    );
+
+    const roundsTaken = sessions.length;
     const minRoundsRequired = Number(minRoundsRes.data);
 
     const lists: Record<SnapshotKind, unknown[]> = {
@@ -76,8 +117,8 @@ export async function GET(req: NextRequest) {
       me: {
         nickname: p.nickname,
         departmentName: dept.name,
-        totalScore: (scoreRes.data ?? []).reduce((s, r) => s + r.score, 0),
-        totalPoints: (scoreRes.data ?? []).reduce((s, r) => s + r.points, 0),
+        totalScore: sessions.reduce((s, r) => s + r.score, 0),
+        totalPoints,
         roundsTaken,
         totalRank: myRankRes.data?.rank ?? null,
         departmentRank: deptRankRes.data?.rank ?? null,
@@ -90,7 +131,7 @@ export async function GET(req: NextRequest) {
       average: lists.average,
       department: lists.department,
       computedAt,
-      visibleRows: await getConfigValue("rank_visible_rows"),
+      visibleRows: cfg.rank_visible_rows,
     });
   } catch (err) {
     console.error("[dashboard]", err instanceof Error ? err.message : err);

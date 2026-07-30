@@ -174,14 +174,16 @@ async function buildCsv(kind: Kind): Promise<string> {
     }
 
     case "participation": {
-      const { data, error } = await db
-        .from("v_participation")
-        .select("round_no, started, finished, registered")
-        .order("round_no");
-      if (error) throw new Error(error.message);
+      const rows = await fetchAll((from, to) =>
+        db
+          .from("v_participation")
+          .select("round_no, started, finished, registered")
+          .order("round_no")
+          .range(from, to)
+      );
       return toCsv(
         ["회차", "시작", "완료", "가입자"],
-        (data ?? []).map((r) => [r.round_no, r.started, r.finished, r.registered])
+        rows.map((r) => [r.round_no, r.started, r.finished, r.registered])
       );
     }
   }
