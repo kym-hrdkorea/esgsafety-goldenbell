@@ -105,19 +105,27 @@ res { isCorrect, isTimeout, correctAnswerLabel, explanation, legalRef,
 ### `GET /api/dashboard`
 순위 목록 4종은 `ranking_snapshot`만 조회. **순위 산정 기준은 포인트**(business-rules 5.0, N항).
 `me.totalRank`/`me.departmentRank`는 뷰에서 **본인 행만** 조회 허용 → addendum B항
+`me.rankedParticipants`/`me.rankedDepartments`는 순위 대상 인원·부서 수(내 순위 카드 분모) —
+뷰 count 조회 허용(B항 확장, T10에서 승인)
 `minRoundsRequired`는 `fn_min_rounds()` 결과 → addendum C항
 ```
 {
-  me: { nickname, totalScore, totalPoints, roundsTaken, totalRank|null, departmentRank|null,
-        rankEligible: boolean, minRoundsRequired },
+  me: { nickname, departmentName, totalScore, totalPoints, roundsTaken,
+        totalRank|null, departmentRank|null,
+        rankEligible: boolean, minRoundsRequired,
+        rankedParticipants, rankedDepartments },
   total:      [{ rank, nickname, orgUnitName, totalPoints, roundsTaken }],
   average:    [{ rank, nickname, orgUnitName, avgPoints, roundsTaken }],
   department: [{ rank, departmentName, orgUnitName, participants, avgPoints }],
-  computedAt
+  computedAt,          // 최신 snapshot 적재 시각. snapshot 부재 시 null
+  visibleRows          // 순위표 기본 표시 행 수 = app_config.rank_visible_rows (규칙 7)
 }
 ```
+- `me.departmentName`: 부서 탭에서 내 부서 행 배지 판정용
+
 ### `GET /api/dashboard/round/[no]`
 → `[{ rank, nickname, orgUnitName, points, score, pct }]`
+- 미인증 `401 UNAUTHENTICATED`, 무효 회차 `404 NOT_FOUND`. 해당 회차 snapshot이 없으면 `[]`.
 
 ## 관리자
 ```
