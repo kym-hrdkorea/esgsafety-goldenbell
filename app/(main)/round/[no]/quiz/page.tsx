@@ -8,6 +8,8 @@ import OxItem from "@/components/quiz/OxItem";
 import OrderItem from "@/components/quiz/OrderItem";
 import ShortItem from "@/components/quiz/ShortItem";
 import Explanation, { type ExplainData } from "@/components/quiz/Explanation";
+import SoundToggle from "@/components/SoundToggle";
+import { requestBgm, sfxCorrect, sfxTimeout, sfxWrong } from "@/lib/sound";
 
 type ItemPayload = {
   seq: number;
@@ -166,6 +168,10 @@ export default function QuizPage({
         }
         setExplain(data);
         setIsLast(data.isLast === true);
+        // 판정 효과음 — 서버 판정 결과에만 연동
+        if (data.isTimeout) sfxTimeout();
+        else if (data.isCorrect) sfxCorrect();
+        else sfxWrong();
         return true;
       } catch {
         // 네트워크 오류 등 예외에서도 제출 경로가 막히지 않아야 한다 (D6 전제)
@@ -242,6 +248,13 @@ export default function QuizPage({
     }
   };
 
+  // 응시 중에는 진행 배경음악을 요청한다. 소리가 켜져 있어야만 실제 재생되고,
+  // 화면을 떠나면 대기 음악으로 되돌린다.
+  useEffect(() => {
+    requestBgm("game");
+    return () => requestBgm("main");
+  }, []);
+
   // 응시 중 이탈 경고 (T03 리뷰 배정 → T07). 뒤로가기는 확정 문안으로 확인받고,
   // 새로고침·창 닫기는 브라우저 기본 경고를 띄운다(커스텀 문안은 브라우저가 미지원).
   // 마지막 문항 해설부터는 경고하지 않는다 — 세션은 12번째 제출로 이미 완료(D항).
@@ -317,13 +330,16 @@ export default function QuizPage({
               {session.roundNo}회차 · {session.theme}
             </div>
           </div>
-          <div className="font-gb-num flex items-baseline gap-[2px] font-bold tabular-nums">
-            <span className="text-[22px] leading-none text-gb-yellow">
-              {String(qno).padStart(2, "0")}
-            </span>
-            <span className="text-[15px] leading-none text-gb-text-dim">
-              / {session.totalItems}
-            </span>
+          <div className="flex items-center gap-2.5">
+            <SoundToggle />
+            <div className="font-gb-num flex items-baseline gap-[2px] font-bold tabular-nums">
+              <span className="text-[22px] leading-none text-gb-yellow">
+                {String(qno).padStart(2, "0")}
+              </span>
+              <span className="text-[15px] leading-none text-gb-text-dim">
+                / {session.totalItems}
+              </span>
+            </div>
           </div>
         </div>
 

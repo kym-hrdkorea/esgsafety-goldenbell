@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import BellIcon from "@/components/BellIcon";
+import SoundToggle from "@/components/SoundToggle";
+import { requestBgm } from "@/lib/sound";
 
 type Me = {
   nickname: string;
@@ -34,6 +36,11 @@ export default function HomePage() {
   const [me, setMe] = useState<Me | null>(null);
   const [rounds, setRounds] = useState<RoundRow[] | null>(null);
   const [blocked, setBlocked] = useState<string | null>(null);
+
+  // 홈·탭 화면의 대기 배경음악 요청 — 소리 토글이 켜져 있을 때만 실제 재생
+  useEffect(() => {
+    requestBgm("main");
+  }, []);
 
   useEffect(() => {
     (async () => {
@@ -97,6 +104,8 @@ export default function HomePage() {
               안전 이룸, 함께 해냄
             </div>
           </div>
+          <div className="flex-1" />
+          <SoundToggle />
         </div>
         <div className="flex flex-col gap-0.5">
           <h1 className="m-0 text-[22px] font-extrabold tracking-[-0.01em] text-white">

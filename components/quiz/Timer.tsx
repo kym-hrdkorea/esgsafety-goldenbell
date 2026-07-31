@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { sfxTick } from "@/lib/sound";
 
 // 표시용 타이머. 판정은 항상 서버(served_at 기준)가 한다 (규칙 3).
 // remainingSec은 서버가 계산한 남은 시간 — 새로고침해도 이어서 줄어든다.
@@ -37,6 +38,11 @@ export default function Timer({
       onExpire();
     }
   }, [secs, running, onExpire]);
+
+  // 임박(10초 이하) 매초 틱음 — 표시용 카운트에만 연동, 판정과 무관
+  useEffect(() => {
+    if (running && secs <= 10 && secs > 0) sfxTick();
+  }, [secs, running]);
 
   const imminent = secs <= 10;
   const pct = Math.max(0, Math.min(100, (secs / timeLimitSec) * 100));

@@ -4,6 +4,7 @@ import { use, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import BellIcon from "@/components/BellIcon";
+import { sfxBell } from "@/lib/sound";
 
 type ResultItem = {
   seq: number;
@@ -79,6 +80,11 @@ export default function ResultPage({
       }
     })();
   }, [no, router]);
+
+  // 만점 골든벨 효과음 — 응시 화면에서 넘어온 직후라 오디오는 이미 잠금 해제 상태
+  useEffect(() => {
+    if (data && data.score === data.totalItems) sfxBell();
+  }, [data]);
 
   // 점수 롤업: 0 → score, 90ms 간격 (목업 확정 연출)
   useEffect(() => {
