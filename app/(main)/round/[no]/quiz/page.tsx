@@ -37,6 +37,9 @@ const TYPE_LABEL = {
   SHORT: "단답",
 } as const;
 
+// design/copy.md 공통 — 일반 오류 (규칙 9)
+const MSG_ERROR = "문제가 발생했습니다. 잠시 후 다시 시도해 주세요.";
+
 // 진행 상태는 전부 서버(quiz_session)에 있다. 브라우저 스토리지 사용 금지 (규칙 5)
 export default function QuizPage({
   params,
@@ -60,13 +63,31 @@ export default function QuizPage({
     action: "home" | "result";
   } | null>(null);
   const [busy, setBusy] = useState(false);
+  // 통신 실패 안내 — copy.md 일반 오류 문안만 사용, 제출·다음 실패가 무음이 되지 않게 (ux A-1)
+  const [errNotice, setErrNotice] = useState<string | null>(null);
+  // 화면 타이머 0초 도달 — 자동 제출 진행 중엔 제출 버튼을 잠근다 (ux A-2)
+  const [expired, setExpired] = useState(false);
+  // 자동 제출이 실패한 뒤에만 수동 재시도 탭을 허용 (errNotice와 분리 — 선택 변경 교착 방지)
+  const [manualRetryOn, setManualRetryOn] = useState(false);
+  // 해설 진입 직후 [다음 문제] 잠금 해제 여부 — 제출 연타의 해설 스킵 방지 (ux B-1)
+  const [nextArmed, setNextArmed] = useState(false);
   const submittingRef = useRef(false);
   const currentSeqRef = useRef(-1); // 지연된 응답·재시도가 다른 문항 화면을 덮지 않게 하는 가드
   const retryTimersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
+  const explainRef = useRef<ExplainData | null>(null); // 이벤트 핸들러가 stale closure 없이 읽는 미러
+  const expiredSeqRef = useRef(-1); // onExpire seq당 1회 래치 — Timer 리마운트發 재발화 차단
+  const syncInFlightRef = useRef(false); // 재동기화 단일 비행
+  const itemAnchorRef = useRef(Date.now()); // 마지막 setItem 시각 — 로컬 표시값 추정용
+  const lastRemainRef = useRef(0);
 
   const clearRetries = () => {
     retryTimersRef.current.forEach((t) => clearTimeout(t));
     retryTimersRef.current = [];
+  };
+
+  const applyExplain = (data: ExplainData | null) => {
+    explainRef.current = data;
+    setExplain(data);
   };
 
   const resetInputs = () => {
@@ -74,10 +95,18 @@ export default function QuizPage({
     setOrderSeq([]);
     setShortText("");
     setTried(false);
+    setExpired(false);
+    setManualRetryOn(false);
+    setErrNotice(null);
   };
 
   const fetchItem = useCallback(async () => {
-    const res = await fetch(`/api/rounds/${no}/item`);
+    const res = await fetch(`/api/rounds/${no}/item`, { cache: "no-store" });
+    if (res.status === 401) {
+      // 세션 쿠키 소실 — 오류 안내로 돌면 무한 재시도 루프가 되므로 로그인으로 (ux A-1)
+      router.replace("/login");
+      return;
+    }
     if (res.status === 410) {
       // 30분 방치 만료 — 이어하기 불허, 결과 화면으로 안내 (business-rules 3.4, F2)
       const body = await res.json();
@@ -93,13 +122,15 @@ export default function QuizPage({
     clearRetries(); // 이전 문항의 자동 제출 재시도는 문항 전환과 함께 폐기
     currentSeqRef.current = data.seq;
     setItem(data);
+    itemAnchorRef.current = Date.now();
+    lastRemainRef.current = data.remainingSec;
     resetInputs();
     submittingRef.current = false;
     if (data.phase === "explained") {
-      setExplain(data as unknown as ExplainData);
+      applyExplain(data as unknown as ExplainData);
       setIsLast(data.isLast === true);
     } else {
-      setExplain(null);
+      applyExplain(null);
     }
   }, [no, router]);
 
@@ -127,13 +158,60 @@ export default function QuizPage({
         setSession(s);
         await fetchItem();
       } catch {
-        setBlocked({
-          message: "문제가 발생했습니다. 잠시 후 다시 시도해 주세요.",
-          action: "home",
-        });
+        setBlocked({ message: MSG_ERROR, action: "home" });
       }
     })();
   }, [no, router, fetchItem]);
+
+  // 화면 잠금·앱 전환 복귀 시 타이머 표시를 서버 기준으로 재동기화 (ux A-2).
+  // 서버는 served_at을 재갱신하지 않으므로(규칙 3, item route에서 확인) 재조회는 판정에 영향이 없다.
+  // 답변 단계에서만 동작하고, 실패는 무시한다(로컬 앵커 타이머가 계속 동작하는 기회주의적 동기화).
+  const syncTimer = useCallback(async () => {
+    if (explainRef.current || submittingRef.current || syncInFlightRef.current)
+      return;
+    syncInFlightRef.current = true;
+    try {
+      const res = await fetch(`/api/rounds/${no}/item`, { cache: "no-store" });
+      if (!res.ok) {
+        // 세션 상태가 변했으면(만료·완료·인증 소실) 전체 경로가 화면 전환을 처리한다
+        if ([401, 409, 410].includes(res.status)) await fetchItem();
+        return;
+      }
+      const data: ItemPayload = await res.json();
+      if (data.seq !== currentSeqRef.current || data.phase !== "answering") {
+        // 문항·단계가 어긋남 — 전체 경로로 위임 (단, 그 사이 해설·제출이 시작됐으면 덮지 않는다)
+        if (!explainRef.current && !submittingRef.current) await fetchItem();
+        return;
+      }
+      if (explainRef.current || submittingRef.current) return; // 지연 응답 가드 (라이브 ref)
+      const localSecs = Math.max(
+        0,
+        lastRemainRef.current -
+          Math.floor((Date.now() - itemAnchorRef.current) / 1000)
+      );
+      if (Math.abs(localSecs - data.remainingSec) <= 1) return; // 이미 정확 — 리마운트 생략
+      setItem(data);
+      itemAnchorRef.current = Date.now();
+      lastRemainRef.current = data.remainingSec;
+    } catch {
+      // 무시 — 다음 복귀·틱에서 재시도
+    } finally {
+      syncInFlightRef.current = false;
+    }
+  }, [no, fetchItem]);
+
+  useEffect(() => {
+    const onWake = () => {
+      if (document.hidden) return;
+      void syncTimer();
+    };
+    document.addEventListener("visibilitychange", onWake);
+    window.addEventListener("pageshow", onWake);
+    return () => {
+      document.removeEventListener("visibilitychange", onWake);
+      window.removeEventListener("pageshow", onWake);
+    };
+  }, [syncTimer]);
 
   // 제출(수동·자동 공통). 판정은 서버가 한다 — 시간초과 여부도 서버 응답을 따른다
   const submit = useCallback(
@@ -151,6 +229,10 @@ export default function QuizPage({
               : { seq: item.seq, submitted: payload }
           ),
         });
+        if (res.status === 401) {
+          router.replace("/login");
+          return true;
+        }
         if (res.status === 409) {
           // 완료·만료 세션의 제출 — 결과 화면으로 (addendum K항)
           router.replace(`/round/${no}/result`);
@@ -166,7 +248,11 @@ export default function QuizPage({
           submittingRef.current = false;
           return true;
         }
-        setExplain(data);
+        // 해설 확정 — 잔여 자동 재시도와 오류 안내는 이 순간 무효다.
+        // 지우지 않으면 뒤늦게 실패한 재시도가 정상 해설 위에 가짜 오류를 띄운다 (ux A-1)
+        clearRetries();
+        setErrNotice(null);
+        applyExplain(data);
         setIsLast(data.isLast === true);
         // 판정 효과음 — 서버 판정 결과에만 연동
         if (data.isTimeout) sfxTimeout();
@@ -192,35 +278,47 @@ export default function QuizPage({
         : selected !== null
     : false;
 
-  const onSubmitClick = () => {
-    if (!item) return;
-    if (!ready) {
+  const onSubmitClick = async () => {
+    if (!item || busy) return;
+    if (!ready && !expired) {
       setTried(true);
       return;
     }
-    const payload =
-      item.itemType === "MC4"
+    // 만료 후 수동 재시도는 미선택이어도 보낸다(payload 없음) — 서버가 시간초과를 판정한다 (규칙 3)
+    const payload = !ready
+      ? undefined
+      : item.itemType === "MC4"
         ? selected
         : item.itemType === "OX"
           ? selected === 0 // 0=O(true), 1=X(false)
           : item.itemType === "ORDER"
             ? orderSeq
             : shortText;
-    void submit(payload);
+    const ok = await submit(payload);
+    if (!ok) setErrNotice(MSG_ERROR); // 실패를 무음으로 두지 않는다 (ux A-1)
   };
 
   // 타이머 0초 → 자동 제출(payload 없음 → 서버가 시간초과 판정, D5).
   // 서버 시계가 클라이언트보다 뒤면 400이 나므로 잠시 후 재시도한다.
   // 재시도는 만료 당시 문항에만 유효 — 문항이 전환되면 발사하지 않는다.
+  // seq당 1회 래치: 재동기화로 Timer가 리마운트돼도 자동 제출 체인이 중복 기동하지 않는다 (ux A-2)
   const onExpire = useCallback(() => {
     const seqAtExpire = currentSeqRef.current;
+    if (expiredSeqRef.current === seqAtExpire) return;
+    expiredSeqRef.current = seqAtExpire;
+    setExpired(true); // 자동 제출 대기 중 제출 버튼 잠금 (ux A-2)
     let attempt = 0;
     const fire = async () => {
       if (currentSeqRef.current !== seqAtExpire) return;
       attempt += 1;
       const ok = await submit(undefined);
-      if (!ok && attempt < 4 && currentSeqRef.current === seqAtExpire) {
-        retryTimersRef.current.push(setTimeout(fire, 1200));
+      if (!ok && currentSeqRef.current === seqAtExpire) {
+        // 실패를 알리고 수동 재시도를 연다 — 자동 재시도도 계속한다 (ux A-1)
+        setErrNotice(MSG_ERROR);
+        setManualRetryOn(true);
+        if (attempt < 4) {
+          retryTimersRef.current.push(setTimeout(fire, 1200));
+        }
       }
     };
     retryTimersRef.current.push(setTimeout(fire, 800));
@@ -230,23 +328,47 @@ export default function QuizPage({
     if (busy) return;
     setBusy(true);
     try {
+      let failed = false;
       const res = await fetch(`/api/rounds/${no}/next`, { method: "POST" });
+      if (res.status === 401) {
+        router.replace("/login");
+        return;
+      }
       if (res.status === 409) {
         // 만료·완료 세션 — 결과 화면으로 (K항)
         router.replace(`/round/${no}/result`);
         return;
       }
-      if (!res.ok) return;
-      const data = await res.json();
-      if (data.isCompleted) {
-        router.push(`/round/${no}/result`);
-        return;
+      if (res.ok) {
+        const data = await res.json();
+        if (data.isCompleted) {
+          router.push(`/round/${no}/result`);
+          return;
+        }
+      } else if (res.status !== 400) {
+        failed = true; // 500 등 — 아래 재조회로 화면은 동기화하되 실패를 알린다
       }
+      // 전진 성공(ok)이든 400(직전 탭에서 이미 전진된 상태)이든 현재 문항 재조회로 수렴한다.
+      // /next 응답이 유실돼 화면이 이전 해설에 갇혀도 재탭만으로 복구된다 (ux A-1)
       await fetchItem();
+      if (failed) setErrNotice(MSG_ERROR);
+    } catch {
+      setErrNotice(MSG_ERROR);
     } finally {
       setBusy(false);
     }
   };
+
+  // 해설 진입 직후 700ms 동안 [다음 문제]를 잠근다 — 45초 압박이 만든 '하단 연타'가
+  // 방금 생긴 버튼에 떨어져 해설을 스킵하는 것 방지. 파일럿 체감 확인 항목 (ux B-1)
+  useEffect(() => {
+    if (!explain) {
+      setNextArmed(false);
+      return;
+    }
+    const t = setTimeout(() => setNextArmed(true), 700);
+    return () => clearTimeout(t);
+  }, [explain]);
 
   // 응시 중에는 진행 배경음악을 요청한다. 소리가 켜져 있어야만 실제 재생되고,
   // 화면을 떠나면 대기 음악으로 되돌린다.
@@ -318,6 +440,11 @@ export default function QuizPage({
 
   const qno = item.seq + 1;
   const phase = explain ? "explained" : "answering";
+  // 안내 행: 통신 오류가 미선택 안내보다 우선 (ux A-1)
+  const notice = errNotice ?? (tried && !ready ? "답을 선택해 주세요" : null);
+  // 만료 직후엔 자동 제출이 돌므로 잠그고, 자동 제출이 실패하면 수동 재시도를 연다 (ux A-2)
+  const submitLocked = busy || (expired && !manualRetryOn);
+  const submitYellow = ready || expired;
 
   return (
     // 높이를 뷰포트에 고정한다(min-h 아님). min-h면 본문이 늘어나 문서 전체가 스크롤되고
@@ -339,7 +466,7 @@ export default function QuizPage({
               <span className="text-[22px] leading-none text-gb-yellow">
                 {String(qno).padStart(2, "0")}
               </span>
-              <span className="text-[15px] leading-none text-gb-text-dim">
+              <span className="text-[15px] leading-none text-gb-text-secondary">
                 / {session.totalItems}
               </span>
             </div>
@@ -450,24 +577,26 @@ export default function QuizPage({
           <>
             <div
               className="flex min-h-[18px] items-center gap-1.5 text-[13px] font-bold text-gb-yellow"
-              style={{ visibility: tried && !ready ? "visible" : "hidden" }}
+              style={{ visibility: notice ? "visible" : "hidden" }}
             >
               <span className="font-gb-num font-bold">!</span>
-              <span>답을 선택해 주세요</span>
+              <span>{notice}</span>
             </div>
             <button
               type="button"
               onClick={onSubmitClick}
-              disabled={busy}
+              disabled={submitLocked}
               className={`w-full min-h-[56px] cursor-pointer rounded text-[19px] font-extrabold tracking-[0.02em] active:translate-x-1 active:translate-y-1 active:shadow-gb-pressed ${
-                ready && !busy ? "shadow-gb-cta" : ""
+                submitYellow && !submitLocked ? "shadow-gb-cta" : ""
               }`}
               style={
-                ready && !busy
+                submitYellow
                   ? {
+                      // 전송 중·잠금은 '미선택 회색'과 구분되게 노랑을 유지하고 흐림만 준다 (ux A-1)
                       background: "#FFD400",
                       border: "3px solid #FFE873",
                       color: "#12172b",
+                      ...(submitLocked ? { opacity: 0.55 } : {}),
                     }
                   : {
                       background: "#232b47",
@@ -480,14 +609,23 @@ export default function QuizPage({
             </button>
           </>
         ) : (
-          <button
-            type="button"
-            onClick={onNext}
-            disabled={busy}
-            className="gb-cta text-[19px]"
-          >
-            {isLast ? "결과 보기" : "다음 문제"}
-          </button>
+          <>
+            {errNotice && (
+              // 해설 단계는 상시 예약 시 한 화면 높이 예산(9a0d589)을 넘겨 오류 시에만 렌더
+              <div className="flex min-h-[18px] items-center gap-1.5 text-[13px] font-bold text-gb-yellow">
+                <span className="font-gb-num font-bold">!</span>
+                <span>{errNotice}</span>
+              </div>
+            )}
+            <button
+              type="button"
+              onClick={onNext}
+              disabled={busy || !nextArmed}
+              className="gb-cta text-[19px]"
+            >
+              {isLast ? "결과 보기" : "다음 문제"}
+            </button>
+          </>
         )}
       </div>
     </main>
