@@ -11,6 +11,9 @@
 
 ### `GET /api/org/departments?unitId=`
 해당 소속의 부서. → `[{ id, name }]`
+- **`unitId` 생략 시** 전체 부서 + 소속명 반환(가입 화면 소속·부서 통합 검색용):
+  `[{ id, name, orgUnitId, orgUnitName }]` — 소속 sort_order → 부서 sort_order 정렬
+- `unitId`가 존재하나 무효(비정수·0 이하)면 `400 VALIDATION`
 
 ### `POST /api/auth/signup`
 ```
