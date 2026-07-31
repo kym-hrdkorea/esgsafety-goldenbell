@@ -1,9 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import BellIcon, { LockIcon } from "@/components/BellIcon";
+import SoundToggle from "@/components/SoundToggle";
+import { requestBgm } from "@/lib/sound";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -14,6 +16,11 @@ export default function LoginPage() {
   const [submitting, setSubmitting] = useState(false);
 
   const locked = lockMessage !== null;
+
+  // 첫 화면부터 대기 배경음악 — 실제 재생은 브라우저 정책상 첫 터치·키 입력 직후 시작
+  useEffect(() => {
+    requestBgm("main");
+  }, []);
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -49,7 +56,10 @@ export default function LoginPage() {
         className="flex min-h-[calc(100dvh-10px)] flex-col"
         onSubmit={onSubmit}
       >
-        <div className="flex flex-1 flex-col gap-7 px-5 pt-12 pb-2">
+        <div className="flex flex-1 flex-col gap-7 px-5 pt-4 pb-2">
+          <div className="flex justify-end">
+            <SoundToggle />
+          </div>
           <div className="flex flex-col items-center gap-3.5 text-center">
             <div className="relative h-[78px] w-[78px]">
               <span

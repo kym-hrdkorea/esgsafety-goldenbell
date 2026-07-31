@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { requestBgm } from "@/lib/sound";
 
 type Me = {
   nickname: string;
@@ -41,6 +42,11 @@ export default function MyRecordPage() {
   const [rounds, setRounds] = useState<RoundRow[] | null>(null);
   const [stats, setStats] = useState<Stats | null>(null);
   const [blocked, setBlocked] = useState<string | null>(null);
+
+  // 탭 화면 대기 배경음악 (직접 진입 대비 — 이미 재생 중이면 그대로 이어진다)
+  useEffect(() => {
+    requestBgm("main");
+  }, []);
 
   useEffect(() => {
     (async () => {

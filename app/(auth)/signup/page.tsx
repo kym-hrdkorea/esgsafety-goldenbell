@@ -4,6 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import BellIcon, { LockIcon } from "@/components/BellIcon";
+import SoundToggle from "@/components/SoundToggle";
+import { requestBgm } from "@/lib/sound";
 
 type OrgUnit = {
   id: number;
@@ -28,6 +30,11 @@ export default function SignupPage() {
   const [nicknameError, setNicknameError] = useState<string | null>(null);
   const [pinError, setPinError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  // 첫 화면부터 대기 배경음악 — 실제 재생은 첫 터치·키 입력 직후 시작
+  useEffect(() => {
+    requestBgm("main");
+  }, []);
 
   useEffect(() => {
     fetch("/api/org/units")
@@ -133,6 +140,8 @@ export default function SignupPage() {
                   안전 이룸, 함께 해냄
                 </div>
               </div>
+              <div className="flex-1" />
+              <SoundToggle />
             </div>
             <div className="flex flex-col gap-1">
               <h1 className="text-2xl font-extrabold tracking-[-0.01em] text-white">

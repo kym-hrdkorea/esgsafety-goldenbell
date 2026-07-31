@@ -7,12 +7,12 @@
 // - 배경음악: /audio/bgm-main.mp3(대기)·/audio/bgm-game.mp3(응시) 루프 재생.
 //   파일이 없으면 조용히 무시된다(Suno 생성물 도착 전에도 앱은 정상).
 // - 설정은 모듈 상태만 사용 — 브라우저 스토리지 금지(규칙 5).
-//   SPA 내비게이션 동안 유지되고 전체 새로고침 시 기본값(꺼짐)으로 복귀한다.
-//   기본 꺼짐: 사무 환경에서 소리가 임의로 나지 않게 하고, 켜는 탭 자체가
-//   브라우저 오디오 잠금 해제 제스처가 된다.
+//   SPA 내비게이션 동안 유지되고 전체 새로고침 시 기본값(켜짐)으로 복귀한다.
+//   기본 켜짐(운영자 확정): 브라우저 자동재생 정책상 실제 재생은 첫 터치·키 입력
+//   직후 시작된다(제스처 재시도 장치). 원치 않으면 토글로 끈다.
 
 let ctx: AudioContext | null = null;
-let enabled = false;
+let enabled = true;
 const listeners = new Set<() => void>();
 
 export type BgmKind = "main" | "game";
@@ -58,6 +58,22 @@ export function setSoundEnabled(on: boolean): void {
 }
 
 // ── 배경음악 ──
+// 자동재생 차단 시 첫 사용자 제스처(터치·클릭·키 입력)에서 1회 재시도한다.
+let gestureArmed = false;
+function armGestureRetry(): void {
+  if (gestureArmed || typeof window === "undefined") return;
+  gestureArmed = true;
+  const retry = () => {
+    window.removeEventListener("pointerdown", retry);
+    window.removeEventListener("keydown", retry);
+    gestureArmed = false;
+    audioCtx();
+    syncBgm();
+  };
+  window.addEventListener("pointerdown", retry);
+  window.addEventListener("keydown", retry);
+}
+
 function syncBgm(): void {
   if (!enabled || desiredBgm === null || typeof window === "undefined") return;
   if (!bgmEl) {
@@ -69,8 +85,8 @@ function syncBgm(): void {
     loadedBgm = desiredBgm;
   }
   bgmEl.volume = BGM_VOLUME;
-  // 파일 부재(404)·자동재생 차단은 조용히 무시 — 다음 제스처에서 재시도된다
-  void bgmEl.play().catch(() => {});
+  // 자동재생 차단이면 첫 제스처에서 재시도. 파일 부재(404)는 조용히 무시.
+  void bgmEl.play().catch(() => armGestureRetry());
 }
 
 // 화면이 원하는 배경음악을 선언한다. 소리가 켜져 있으면 즉시 전환을 시도한다.

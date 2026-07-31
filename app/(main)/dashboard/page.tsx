@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import RankTable, { type RankRow } from "@/components/dashboard/RankTable";
+import { requestBgm } from "@/lib/sound";
 
 type Dashboard = {
   me: {
@@ -78,6 +79,11 @@ export default function DashboardPage() {
   const [tab, setTab] = useState<TabKey>("total");
   const [selectedRound, setSelectedRound] = useState<number | null>(null);
   const [roundCache, setRoundCache] = useState<Record<number, RoundRankRow[]>>({});
+
+  // 탭 화면 대기 배경음악 (직접 진입 대비 — 이미 재생 중이면 그대로 이어진다)
+  useEffect(() => {
+    requestBgm("main");
+  }, []);
 
   useEffect(() => {
     (async () => {
