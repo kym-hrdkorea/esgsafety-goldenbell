@@ -10,8 +10,10 @@ export default function Mc4Item({
   selected: number | null;
   onSelect: (displayIndex: number) => void;
 }) {
+  // 카드 높이는 48px 이상을 유지한다 — 터치 타깃 최소 44px를 지키면서
+  // 4지선다가 작은 화면(375x667)에서도 스크롤 없이 들어가는 상한이다.
   return (
-    <div className="flex flex-col gap-2.5">
+    <div className="flex flex-col gap-2">
       {choices.map((label, i) => {
         const on = selected === i;
         return (
@@ -19,7 +21,7 @@ export default function Mc4Item({
             key={i}
             type="button"
             onClick={() => onSelect(i)}
-            className={`flex w-full min-h-[56px] items-center gap-3 rounded border-[3px] px-3.5 py-[13px] text-left text-[17px] leading-[1.5] break-keep active:translate-x-[3px] active:translate-y-[3px] active:shadow-gb-pressed ${
+            className={`flex w-full min-h-12 items-center gap-3 rounded border-[3px] px-3.5 py-2.5 text-left text-[16px] leading-[1.45] break-keep active:translate-x-[3px] active:translate-y-[3px] active:shadow-gb-pressed ${
               on
                 ? "translate-x-[2px] translate-y-[2px] shadow-[2px_2px_0_#6B5200]"
                 : "shadow-gb-card"

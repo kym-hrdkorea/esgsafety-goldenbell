@@ -56,23 +56,23 @@ function RecapRow({
 }) {
   return (
     <div
-      className="flex min-h-12 w-full items-center gap-2.5 rounded border-[3px] px-3 py-[11px] text-[15px] leading-[1.5]"
+      className="flex min-h-[42px] w-full items-center gap-2 rounded border-2 px-2.5 py-1.5 text-[14px] leading-[1.45]"
       style={ROW_STYLE[kind]}
     >
       <span
-        className="font-gb-num flex h-7 w-7 flex-none items-center justify-center rounded-[2px] text-[15px] font-bold tabular-nums"
+        className="font-gb-num flex h-6 w-6 flex-none items-center justify-center rounded-[2px] text-[14px] font-bold tabular-nums"
         style={BADGE_STYLE[kind]}
       >
         {badge}
       </span>
       <span className="flex-1 text-left [text-wrap:pretty]">{label}</span>
       {kind === "correct" && (
-        <span className="flex-none text-[17px] font-black text-gb-green-text">
+        <span className="flex-none text-[16px] font-black text-gb-green-text">
           ✓
         </span>
       )}
       {kind === "wrong" && (
-        <span className="flex-none text-[15px] font-black text-gb-red-text">
+        <span className="flex-none text-[14px] font-black text-gb-red-text">
           ✕
         </span>
       )}
@@ -149,14 +149,16 @@ export default function Explanation({
     }
   }
 
+  // 해설 단계는 한 화면 안에 들어가는 것이 목표다 — 배너·리캡·해설의 세로 밀도를
+  // 답변 단계보다 촘촘하게 잡는다(문항당 45초 뒤 곧바로 읽는 화면이라 스크롤 비용이 크다).
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-2.5">
       {state === "correct" && (
         <div
-          className="flex items-center gap-3.5 rounded border-[3px] border-gb-green bg-gb-green-bg p-4 shadow-gb-card"
+          className="flex items-center gap-3 rounded border-[3px] border-gb-green bg-gb-green-bg p-3 shadow-gb-card"
           style={{ animation: "gb-rise-in 0.25s ease-out" }}
         >
-          <div className="relative h-[52px] w-[52px] flex-none">
+          <div className="relative h-11 w-11 flex-none">
             <span
               className="absolute inset-0 rounded-full border-2 border-gb-gold"
               style={{ animation: "gb-ring-out 0.8s ease-out 0.1s both" }}
@@ -173,17 +175,17 @@ export default function Explanation({
                   display: "inline-flex",
                 }}
               >
-                <BellIcon size={28} />
+                <BellIcon size={24} />
               </span>
             </div>
           </div>
-          <div className="flex flex-col gap-[3px]">
-            <div className="text-[21px] font-extrabold tracking-[-0.01em] text-gb-green-text">
+          <div className="flex flex-1 items-baseline gap-2.5">
+            <div className="text-[19px] font-extrabold tracking-[-0.01em] text-gb-green-text">
               정답입니다
             </div>
             <div className="font-gb-num flex items-baseline gap-1 font-bold text-gb-gold">
-              <span className="text-[16px] tabular-nums">+{data.points}</span>
-              <span className="text-[12px] text-gb-text-dim">SCORE</span>
+              <span className="text-[15px] tabular-nums">+{data.points}</span>
+              <span className="text-[11px] text-gb-text-dim">SCORE</span>
             </div>
           </div>
         </div>
@@ -191,11 +193,11 @@ export default function Explanation({
 
       {state === "wrong" && (
         <div
-          className="flex items-center gap-3.5 rounded border-[3px] border-gb-red bg-gb-red-bg p-4 shadow-gb-card"
+          className="flex items-center gap-3 rounded border-[3px] border-gb-red bg-gb-red-bg p-3 shadow-gb-card"
           style={{ animation: "gb-rise-in 0.25s ease-out" }}
         >
-          <div className="flex h-11 w-11 flex-none items-center justify-center rounded-[3px] bg-gb-red">
-            <svg width="22" height="22" viewBox="0 0 24 24">
+          <div className="flex h-9 w-9 flex-none items-center justify-center rounded-[3px] bg-gb-red">
+            <svg width="20" height="20" viewBox="0 0 24 24">
               <path
                 d="M6 6l12 12M18 6L6 18"
                 stroke="#fff"
@@ -204,7 +206,7 @@ export default function Explanation({
               />
             </svg>
           </div>
-          <div className="text-[21px] font-extrabold tracking-[-0.01em] text-gb-red-text">
+          <div className="text-[19px] font-extrabold tracking-[-0.01em] text-gb-red-text">
             아쉽습니다
           </div>
         </div>
@@ -212,15 +214,15 @@ export default function Explanation({
 
       {state === "timeout" && (
         <div
-          className="flex items-center gap-3.5 rounded border-[3px] p-4 shadow-gb-card"
+          className="flex items-center gap-3 rounded border-[3px] p-3 shadow-gb-card"
           style={{
             background: "#1b2136",
             borderColor: "#5E6A8C",
             animation: "gb-rise-in 0.25s ease-out",
           }}
         >
-          <div className="flex h-11 w-11 flex-none items-center justify-center rounded-[3px] bg-gb-border-card">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+          <div className="flex h-9 w-9 flex-none items-center justify-center rounded-[3px] bg-gb-border-card">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
               <circle cx="12" cy="12" r="8.5" stroke="#C6CEE4" strokeWidth="2.4" />
               <path
                 d="M12 7.5V12l3 2.2"
@@ -230,60 +232,61 @@ export default function Explanation({
               />
             </svg>
           </div>
-          <div className="text-[21px] font-extrabold tracking-[-0.01em] text-gb-text-strong-sub">
+          <div className="text-[19px] font-extrabold tracking-[-0.01em] text-gb-text-strong-sub">
             시간이 초과되었습니다
           </div>
         </div>
       )}
 
-      <div className="flex flex-col gap-2.5">
-        <h1 className="m-0 text-[19px] leading-[1.5] font-bold tracking-[-0.012em] text-white [text-wrap:pretty]">
+      <div className="flex flex-col gap-2">
+        <h1 className="m-0 text-[17px] leading-[1.45] font-bold tracking-[-0.012em] text-white [text-wrap:pretty]">
           {stem}
         </h1>
-        <div className="flex items-baseline gap-2 rounded-r-[3px] border-l-4 border-gb-gold bg-gb-bg-panel px-3 py-2.5">
-          <span className="text-[13px] font-extrabold whitespace-nowrap text-gb-gold">
+        <div className="flex items-baseline gap-2 rounded-r-[3px] border-l-4 border-gb-gold bg-gb-bg-panel px-3 py-2">
+          <span className="text-[12px] font-extrabold whitespace-nowrap text-gb-gold">
             정답
           </span>
-          <span className="text-[16px] font-bold text-white">
+          <span className="text-[15px] font-bold text-white [text-wrap:pretty]">
             {data.correctAnswerLabel}
           </span>
         </div>
       </div>
 
       {recap.length > 0 && (
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-1.5">
           {recap.map((row, i) => (
             <RecapRow key={i} {...row} />
           ))}
           {myAnswerLine && (
-            <div className="px-0.5 pt-0.5 text-[13px] font-bold text-gb-red-text">
+            <div className="px-0.5 text-[13px] font-bold text-gb-red-text">
               {myAnswerLine}
             </div>
           )}
         </div>
       )}
 
-      <div className="flex flex-col gap-2">
+      <div className="flex flex-col gap-1.5">
         <div className="flex items-center gap-2">
           <div className="h-[13px] w-1 bg-gb-yellow" />
           <div className="text-[13px] font-extrabold tracking-[0.08em] text-gb-text-strong-sub">
             해설
           </div>
         </div>
-        <p className="m-0 text-[16px] leading-[1.65] text-gb-text-body [text-wrap:pretty]">
+        <p className="m-0 text-[15px] leading-[1.55] text-gb-text-body [text-wrap:pretty]">
           {data.explanation}
         </p>
       </div>
 
+      {/* 근거는 참고 정보다 — 라벨을 별도 행으로 띄우지 않고 한 줄에 합쳐 세로 공간을 아낀다 */}
       {data.legalRef && (
-        <div className="flex flex-col gap-2 pb-2">
-          <div className="flex items-center gap-2">
-            <div className="h-[13px] w-1 bg-gb-text-dim" />
-            <div className="text-[13px] font-extrabold tracking-[0.08em] text-gb-text-secondary">
+        <div className="flex items-baseline gap-2 pb-1">
+          <div className="flex flex-none items-center gap-2">
+            <div className="h-[11px] w-1 bg-gb-text-dim" />
+            <div className="text-[12px] font-extrabold tracking-[0.08em] text-gb-text-secondary">
               근거
             </div>
           </div>
-          <div className="text-[14px] text-gb-text-secondary tabular-nums">
+          <div className="text-[13px] text-gb-text-secondary tabular-nums [text-wrap:pretty]">
             {data.legalRef}
           </div>
         </div>

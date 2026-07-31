@@ -320,9 +320,12 @@ export default function QuizPage({
   const phase = explain ? "explained" : "answering";
 
   return (
-    <main className="mx-auto flex min-h-[calc(100dvh-10px)] w-full max-w-[640px] flex-col">
+    // 높이를 뷰포트에 고정한다(min-h 아님). min-h면 본문이 늘어나 문서 전체가 스크롤되고
+    // 답변 단계에서 타이머가, 해설 단계에서 [다음 문제]가 화면 밖으로 밀린다.
+    // 고정 높이라야 아래 overflow-y-auto가 실제로 작동해 헤더·CTA가 항상 보인다.
+    <main className="mx-auto flex h-[calc(100dvh-10px)] w-full max-w-[640px] flex-col overflow-hidden">
       {/* 헤더: 회차 라벨 · 진행 n/12 · 12칸 진행 블록 · (답변 단계) 타이머 */}
-      <div className="flex flex-col gap-[11px] border-b-[3px] border-gb-border-divider bg-gb-bg-panel px-4 pt-3.5 pb-3">
+      <div className="flex flex-none flex-col gap-2.5 border-b-[3px] border-gb-border-divider bg-gb-bg-panel px-4 pt-3 pb-2.5">
         <div className="flex items-center justify-between gap-2.5">
           <div className="flex min-w-0 items-center gap-2">
             <div className="h-[15px] w-1 flex-none bg-gb-yellow" />
@@ -374,8 +377,8 @@ export default function QuizPage({
         )}
       </div>
 
-      {/* 본문 */}
-      <div className="flex flex-1 flex-col gap-4 overflow-y-auto px-4 pt-[18px] pb-2">
+      {/* 본문 — 넘칠 때 여기'만' 스크롤된다 (min-h-0가 없으면 flex 자식이 줄지 않는다) */}
+      <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto px-4 pt-3 pb-1.5">
         {phase === "answering" ? (
           <>
             <div className="flex flex-col gap-2.5">
@@ -442,7 +445,7 @@ export default function QuizPage({
       </div>
 
       {/* 하단 고정 CTA */}
-      <div className="flex flex-col gap-2 border-t-[3px] border-gb-border-divider bg-gb-bg-panel px-4 pt-2.5 pb-4">
+      <div className="flex flex-none flex-col gap-1.5 border-t-[3px] border-gb-border-divider bg-gb-bg-panel px-4 pt-2 pb-3">
         {phase === "answering" ? (
           <>
             <div
