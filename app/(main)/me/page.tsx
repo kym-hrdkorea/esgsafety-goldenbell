@@ -121,15 +121,21 @@ export default function MyRecordPage() {
               <div
                 key={r.roundNo}
                 className={`flex items-center gap-2.5 border-t-2 border-gb-border-row px-3 py-[11px] first:border-t-0 ${
-                  perfect ? "bg-gb-bg-gold-tint" : "bg-gb-bg-screen"
-                } ${dim ? "opacity-55" : ""}`}
+                  // 잠금 행 감쇠는 opacity가 아니라 어두운 배경으로 — opacity는 텍스트 대비를
+                  // 1.87:1까지 떨어뜨려 AA 미달이었다 (ux A-3)
+                  perfect
+                    ? "bg-gb-bg-gold-tint"
+                    : dim
+                      ? "bg-gb-bg-page"
+                      : "bg-gb-bg-screen"
+                }`}
               >
                 <span className="font-gb-num w-[34px] text-[13px] font-bold text-gb-text-secondary">
                   {String(r.roundNo).padStart(2, "0")}
                 </span>
                 <span
                   className={`flex-1 overflow-hidden text-ellipsis whitespace-nowrap text-[14px] font-bold ${
-                    dim ? "text-gb-text-dim" : "text-gb-text-primary"
+                    dim ? "text-gb-text-secondary" : "text-gb-text-primary"
                   }`}
                 >
                   {r.theme}
@@ -154,7 +160,7 @@ export default function MyRecordPage() {
                       ? perfect
                         ? "text-[15px] text-gb-gold"
                         : "text-[15px] text-gb-yellow"
-                      : "text-[12px] text-gb-text-dim"
+                      : "text-[12px] text-gb-text-secondary"
                   }`}
                 >
                   {played ? `${r.myScore}/12` : r.state === "open" ? "진행 중" : "-"}

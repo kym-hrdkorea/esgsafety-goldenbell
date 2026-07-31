@@ -221,12 +221,12 @@ export default function DashboardPage() {
                 {me.totalRank}
               </span>
               <span className="text-[14px] text-gb-text-secondary">위</span>
-              <span className="ml-[5px] text-[12px] text-gb-text-dim">
+              <span className="ml-[5px] text-[14px] text-gb-text-secondary">
                 / {me.rankedParticipants.toLocaleString("ko-KR")}
               </span>
             </div>
           ) : (
-            <div className="text-[13px] font-bold leading-[1.5] text-gb-text-dim">
+            <div className="text-[14px] font-bold leading-[1.5] text-gb-text-secondary">
               순위 집계 대상이 아닙니다
             </div>
           )}
@@ -241,12 +241,12 @@ export default function DashboardPage() {
                 {me.departmentRank}
               </span>
               <span className="text-[14px] text-gb-text-secondary">위</span>
-              <span className="ml-[5px] text-[12px] text-gb-text-dim">
+              <span className="ml-[5px] text-[14px] text-gb-text-secondary">
                 / {me.rankedDepartments.toLocaleString("ko-KR")}
               </span>
             </div>
           ) : (
-            <div className="text-[13px] font-bold leading-[1.5] text-gb-text-dim">
+            <div className="text-[14px] font-bold leading-[1.5] text-gb-text-secondary">
               순위 집계 대상이 아닙니다
             </div>
           )}

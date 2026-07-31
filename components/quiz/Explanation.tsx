@@ -42,7 +42,8 @@ const ROW_STYLE: Record<RecapKind, React.CSSProperties> = {
 const BADGE_STYLE: Record<RecapKind, React.CSSProperties> = {
   correct: { background: "#24B24C", color: "#0b0f1d" },
   wrong: { background: "#E23A2E", color: "#fff" },
-  dim: { background: "#232b47", color: "#5E6A8C" },
+  // 2.60:1 → 5.61:1. 토큰 secondary(#8B93AB)는 이 배경에서 4.55:1로 AA 마진이 없어 밝은 값 사용 (ux A-3)
+  dim: { background: "#232b47", color: "#9AA4C2" },
 };
 
 function RecapRow({
@@ -185,7 +186,7 @@ export default function Explanation({
             </div>
             <div className="font-gb-num flex items-baseline gap-1 font-bold text-gb-gold">
               <span className="text-[15px] tabular-nums">+{data.points}</span>
-              <span className="text-[11px] text-gb-text-dim">SCORE</span>
+              <span className="text-[12px] text-gb-text-secondary">SCORE</span>
             </div>
           </div>
         </div>

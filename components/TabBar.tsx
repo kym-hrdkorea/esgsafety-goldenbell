@@ -67,11 +67,12 @@ export default function TabBar() {
           <Link
             key={t.href}
             href={t.href}
-            className="-mt-[3px] flex flex-col items-center gap-1 border-t-[3px] pt-2.5 pb-3.5 text-[12px] font-bold no-underline"
+            className="-mt-[3px] flex flex-col items-center gap-1 border-t-[3px] pt-2.5 pb-3.5 text-[13px] font-bold no-underline"
             style={
               active
                 ? { color: "#FFD400", borderTopColor: "#FFD400" }
-                : { color: "#5E6A8C", borderTopColor: "transparent" }
+                : // 3.11:1 → 5.45:1 — 순위표로 가는 유일한 경로가 반사광에서 사라지지 않게 (ux A-3)
+                  { color: "#8B93AB", borderTopColor: "transparent" }
             }
           >
             <TabIcon label={t.label} />

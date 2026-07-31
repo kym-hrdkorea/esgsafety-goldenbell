@@ -345,7 +345,7 @@ export default function SignupPage() {
                   <button
                     type="button"
                     onClick={() => switchMode("list")}
-                    className="cursor-pointer self-start bg-transparent p-0 text-[13px] font-bold text-gb-yellow underline underline-offset-[3px]"
+                    className="inline-flex min-h-11 cursor-pointer items-center self-start bg-transparent px-1 py-2.5 -mx-1 text-[13px] font-bold text-gb-yellow underline underline-offset-[3px]"
                   >
                     목록에서 직접 선택
                   </button>
@@ -405,7 +405,7 @@ export default function SignupPage() {
                 <button
                   type="button"
                   onClick={() => switchMode("search")}
-                  className="cursor-pointer self-start bg-transparent p-0 text-[13px] font-bold text-gb-yellow underline underline-offset-[3px]"
+                  className="inline-flex min-h-11 cursor-pointer items-center self-start bg-transparent px-1 py-2.5 -mx-1 text-[13px] font-bold text-gb-yellow underline underline-offset-[3px]"
                 >
                   소속이나 부서명으로 검색하세요
                 </button>

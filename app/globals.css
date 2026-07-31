@@ -217,3 +217,19 @@ body {
     transform: translateX(1.5px);
   }
 }
+
+/* ── 감속 모션 (ux A-4) ──
+   OS '동작 줄이기' 사용자에게 모든 애니메이션·전환을 사실상 끈다.
+   !important는 인라인 style로 걸린 애니메이션(Timer·Explanation 등)까지 덮기 위해 필수.
+   animation-delay까지 죽여야 delay+both 조합(정답 링·로그인 벨)이
+   시작 프레임 정지 상태로 잔상을 남기지 않는다. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    animation-delay: 0s !important;
+    transition-duration: 0.01ms !important;
+  }
+}
