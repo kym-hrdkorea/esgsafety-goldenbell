@@ -18,7 +18,14 @@ type Props = {
   meBadgeLabel: string;
 };
 
-const GRID = "grid grid-cols-[44px_1fr_1fr_64px] items-center gap-2";
+// 열 폭(375px 행 내부폭 313 = 32 + 120.6 + 80.4 + 62 + gap 6×3).
+// 이름 열 90.5→120.6px — '우리 부서' 배지가 붙는 내 행이 37.7px까지 눌려
+// 부서 193종을 구분할 수 없었다 (ux B-2). 값 열 62px은 헤더 '평균 포인트'
+// 실측 폭(12px + tracking .08em = 62.0px)에 맞춘 값이다. 문안은 줄일 수 없으므로
+// (규칙 9) 열을 문안에 맞춘다. 순위 열은 '128' + pl-1.5 = 28.3px면 충분해 32px.
+// 값 열을 줄이려면 헤더 폭부터 다시 재야 한다.
+const GRID =
+  "grid grid-cols-[32px_minmax(0,1.5fr)_minmax(0,1fr)_62px] items-center gap-1.5";
 
 // 순위표: 기본 rank_visible_rows행, [더보기]로 전체 확장 (business-rules 5.2).
 // 공동 순위로 20행을 넘는 payload도 그대로 표시한다 (G7).
@@ -46,10 +53,12 @@ export default function RankTable({
     <div className="flex flex-col gap-2.5">
       <div className="overflow-hidden rounded border-[3px] border-gb-border-divider">
         <div className={`${GRID} bg-gb-bg-panel px-3 py-[9px]`}>
+          {/* nowrap 필수: '평균 포인트'(62.0px)는 값 열과 동일 폭이라 wrap을 허용하면
+              평균·부서 탭에서만 헤더가 2줄이 되어 탭 전환 시 표가 세로로 튄다. */}
           {headers.map((h, i) => (
             <div
               key={h}
-              className={`text-[12px] font-extrabold tracking-[0.08em] text-gb-text-secondary ${
+              className={`text-[12px] font-extrabold tracking-[0.08em] whitespace-nowrap text-gb-text-secondary ${
                 i === 3 ? "text-right" : ""
               }`}
             >

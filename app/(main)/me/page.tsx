@@ -120,7 +120,7 @@ export default function MyRecordPage() {
             return (
               <div
                 key={r.roundNo}
-                className={`flex items-center gap-2.5 border-t-2 border-gb-border-row px-3 py-[11px] first:border-t-0 ${
+                className={`flex flex-col gap-1.5 border-t-2 border-gb-border-row px-3 py-[11px] first:border-t-0 ${
                   // 잠금 행 감쇠는 opacity가 아니라 어두운 배경으로 — opacity는 텍스트 대비를
                   // 1.87:1까지 떨어뜨려 AA 미달이었다 (ux A-3)
                   perfect
@@ -130,17 +130,36 @@ export default function MyRecordPage() {
                       : "bg-gb-bg-screen"
                 }`}
               >
-                <span className="font-gb-num w-[34px] text-[13px] font-bold text-gb-text-secondary">
-                  {String(r.roundNo).padStart(2, "0")}
-                </span>
-                <span
-                  className={`flex-1 overflow-hidden text-ellipsis whitespace-nowrap text-[14px] font-bold ${
-                    dim ? "text-gb-text-secondary" : "text-gb-text-primary"
-                  }`}
-                >
-                  {r.theme}
-                </span>
-                <div className="flex max-w-24 flex-1 gap-0.5">
+                {/* 1줄: 회차·테마·점수. 게이지를 2줄로 내려 테마 몫 101 → 207px.
+                    한 줄에 다 넣으면 테마와 게이지가 폭을 나눠 가져 8행 중 6행이
+                    말줄임됐다 — 1주차부터 전원이 겪는 자리다 (ux B-4). */}
+                <div className="flex items-center gap-2.5">
+                  <span className="font-gb-num w-[34px] flex-none text-[13px] font-bold text-gb-text-secondary">
+                    {String(r.roundNo).padStart(2, "0")}
+                  </span>
+                  <span
+                    className={`min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap text-[14px] font-bold ${
+                      dim ? "text-gb-text-secondary" : "text-gb-text-primary"
+                    }`}
+                  >
+                    {r.theme}
+                  </span>
+                  <span
+                    className={`font-gb-num w-[52px] flex-none text-right font-bold tabular-nums ${
+                      played
+                        ? perfect
+                          ? "text-[15px] text-gb-gold"
+                          : "text-[15px] text-gb-yellow"
+                        : "text-[12px] text-gb-text-secondary"
+                    }`}
+                  >
+                    {played ? `${r.myScore}/12` : r.state === "open" ? "진행 중" : "-"}
+                  </span>
+                </div>
+                {/* 2줄: 12칸 게이지. 폭 96px·칸높이 10px은 목업 확정값 그대로 두고,
+                    회차 열(34px) + gap(10px) = 44px만큼 들여 1줄 테마와 좌측선을 맞춘다.
+                    둘 중 하나를 바꾸면 ml-11도 함께 바꿔야 한다. */}
+                <div className="ml-11 flex w-24 gap-0.5">
                   {Array.from({ length: 12 }, (_, i) => (
                     <div
                       key={i}
@@ -154,17 +173,6 @@ export default function MyRecordPage() {
                     />
                   ))}
                 </div>
-                <span
-                  className={`font-gb-num w-[52px] text-right font-bold tabular-nums ${
-                    played
-                      ? perfect
-                        ? "text-[15px] text-gb-gold"
-                        : "text-[15px] text-gb-yellow"
-                      : "text-[12px] text-gb-text-secondary"
-                  }`}
-                >
-                  {played ? `${r.myScore}/12` : r.state === "open" ? "진행 중" : "-"}
-                </span>
               </div>
             );
           })}

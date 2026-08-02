@@ -172,7 +172,9 @@ export default function HomePage() {
                   <span className="font-gb-num rounded-[2px] bg-gb-yellow px-[7px] py-[2px] text-[13px] font-bold text-gb-bg-screen">
                     {open.roundNo}회차
                   </span>
-                  <span className="text-[17px] font-extrabold text-white">
+                  {/* 몫 252px(375). 최장 테마 237.4px라 375·390에서는 온전히 보이고
+                      360px에서만 꼬리가 잘린다 — 접히던 것보다 낫다 (ux B-3·C절) */}
+                  <span className="min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap text-[17px] font-extrabold text-white">
                     {open.theme}
                   </span>
                 </div>
@@ -247,20 +249,22 @@ export default function HomePage() {
                   <span className="font-gb-num rounded-[2px] border-2 border-gb-text-dim px-1.5 py-px text-[12px] font-bold text-gb-text-secondary">
                     {r.roundNo}회차
                   </span>
-                  <span className="text-[15px] font-bold text-gb-text-primary">
+                  {/* 테마가 남는 폭을 전부 갖고 상태는 우측 끝에 고정된다. flex-1 스페이서를
+                      남겨두면 테마와 스페이서가 basis 0으로 공간을 반씩 나눠 테마 몫이
+                      169 → 85px로 오히려 줄어든다 — 그래서 스페이서를 없앴다 (ux B-3). */}
+                  <span className="min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap text-[15px] font-bold text-gb-text-primary">
                     {r.theme}
                   </span>
-                  <div className="flex-1" />
                   {participated &&
                     (perfect ? (
-                      <span className="flex items-center gap-[5px] text-[12px] font-extrabold text-gb-gold">
+                      <span className="flex flex-none items-center gap-[5px] text-[12px] font-extrabold text-gb-gold">
                         <BellIcon size={14} fill="#C9A227" />
                         <span className="font-gb-num">
                           참여 완료 {r.myScore}/12
                         </span>
                       </span>
                     ) : (
-                      <span className="font-gb-num text-[12px] font-bold text-gb-text-secondary">
+                      <span className="font-gb-num flex-none text-[12px] font-bold text-gb-text-secondary">
                         참여 완료 {r.myScore}/12
                       </span>
                     ))}
@@ -292,16 +296,18 @@ export default function HomePage() {
           {locked.map((r) => (
             <div
               key={r.roundNo}
-              className="flex items-center gap-2 rounded border-[3px] border-dashed border-gb-border-divider px-3.5 py-3"
+              className="flex items-start gap-2 rounded border-[3px] border-dashed border-gb-border-divider px-3.5 py-3"
             >
-              <span className="font-gb-num rounded-[2px] border-2 border-gb-border-chip px-1.5 py-px text-[12px] font-bold text-gb-text-dim">
+              <span className="font-gb-num flex-none rounded-[2px] border-2 border-gb-border-chip px-1.5 py-px text-[12px] font-bold text-gb-text-dim">
                 {r.roundNo}회차
               </span>
-              <span className="text-[15px] font-bold text-gb-text-dim">
+              {/* 우측 문안이 118px로 가장 길어 테마 몫이 128px뿐이다. 다른 행처럼 잘라내면
+                  테마의 절반이 사라지므로 여기만 2줄을 허용한다 — 8개 테마 전부 어절
+                  단위로 2줄에 들어간다. 접히던 게 아니라 접기로 한 것이다 (ux B-3). */}
+              <span className="line-clamp-2 min-w-0 flex-1 text-[15px] font-bold text-gb-text-dim">
                 {r.theme}
               </span>
-              <div className="flex-1" />
-              <span className="text-[13px] font-bold text-[#7A85A6]">
+              <span className="flex-none text-[13px] font-bold text-[#7A85A6]">
                 아직 열리지 않았습니다
               </span>
             </div>
