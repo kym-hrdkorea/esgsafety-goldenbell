@@ -49,16 +49,21 @@
             <div style="font-size: 14px; font-weight: 800; color: #C6CEE4;">회차별 점수</div>
           </div>
           <div style="border: 3px solid #262f4d; border-radius: 4px; overflow: hidden;">
+            <!-- 2줄 구성: 1줄(회차·테마·점수) + 2줄(12칸 게이지, 회차 열만큼 들여쓰기).
+                 한 줄에 다 넣으면 테마와 게이지가 폭을 나눠 가져 테마가 101px로 눌리고
+                 8행 중 6행이 말줄임된다 (ux B-4) -->
             <sc-for list="{{ rounds }}" as="r" hint-placeholder-count="8">
               <div style="{{ r.style }}">
-                <span style="font-family: 'Chakra Petch', ui-monospace, monospace; font-weight: 700; font-size: 13px; color: #8B93AB; width: 34px;">{{ r.no }}</span>
-                <span style="{{ r.labelStyle }}">{{ r.label }}</span>
-                <div style="flex: 1; display: flex; gap: 2px; max-width: 96px;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                  <span style="flex: 0 0 auto; font-family: 'Chakra Petch', ui-monospace, monospace; font-weight: 700; font-size: 13px; color: #8B93AB; width: 34px;">{{ r.no }}</span>
+                  <span style="{{ r.labelStyle }}">{{ r.label }}</span>
+                  <span style="{{ r.scoreStyle }}">{{ r.score }}</span>
+                </div>
+                <div style="display: flex; gap: 2px; width: 96px; margin-left: 44px;">
                   <sc-for list="{{ r.blocks }}" as="b" hint-placeholder-count="12">
                     <div style="{{ b.style }}"></div>
                   </sc-for>
                 </div>
-                <span style="{{ r.scoreStyle }}">{{ r.score }}</span>
               </div>
             </sc-for>
           </div>
@@ -120,27 +125,29 @@
 </div>
 </x-dc>
 <script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:760,&quot;height&quot;:1120}}">
+// 실DB quiz_round.theme 8건 — 짧은 더미가 폭 문제를 감췄다 (ux-findings C절)
 const ROUNDS = [
-  { no: 1, label: '심폐소생술', score: 11 },
-  { no: 2, label: '밀폐공간 작업', score: 12 },
-  { no: 3, label: '온열질환', score: null, open: true },
-  { no: 4, label: '추락·낙하 예방', score: null },
-  { no: 5, label: '전기 안전', score: null },
-  { no: 6, label: '화학물질 취급', score: null },
-  { no: 7, label: '겨울철 안전', score: null },
-  { no: 8, label: '종합', score: null }
+  { no: 1, label: '안전, 우리 이야기로 시작하기', score: 11 },
+  { no: 2, label: '여름을 안전하게 — 온열질환과 건강', score: 12 },
+  { no: 3, label: '불, 처음 3분이 전부다', score: null, open: true },
+  { no: 4, label: '나가는 길을 알고 있는가', score: null },
+  { no: 5, label: '사무실은 안전한가', score: null },
+  { no: 6, label: '오래 일하려면 — 몸과 마음', score: null },
+  { no: 7, label: '위험은 우리가 찾는다', score: null },
+  { no: 8, label: '안전, 함께 해냄', score: null }
 ];
+// 영역 라벨은 copy.md 확정값 (구현 CATEGORY_LABELS와 동일)
 const AREAS = [
-  { label: '심폐소생술', pct: 92 },
-  { label: '화재예방', pct: 100 },
-  { label: '온열질환', pct: 67 },
+  { label: '화재·대피', pct: 92 },
+  { label: '생활안전', pct: 100 },
+  { label: '직장 건강', pct: 67 },
   { label: '사무실 안전', pct: 100 },
   { label: '위험성평가', pct: 50 }
 ];
 const LEARNS = [
-  { no: 1, label: '심폐소생술', seen: true },
-  { no: 2, label: '밀폐공간 작업', seen: true },
-  { no: 3, label: '온열질환', seen: false }
+  { no: 1, label: '안전, 우리 이야기로 시작하기', seen: true },
+  { no: 2, label: '여름을 안전하게 — 온열질환과 건강', seen: true },
+  { no: 3, label: '불, 처음 3분이 전부다', seen: false }
 ];
 const NUM = "'Chakra Petch', ui-monospace, monospace";
 
@@ -151,13 +158,15 @@ class Component extends DCLogic {
       return {
         no: String(r.no).padStart(2, '0'),
         label: r.label,
-        labelStyle: 'flex:1;font-size:14px;font-weight:700;color:' + (dim ? '#5E6A8C' : '#EDF0F7') + ';overflow:hidden;text-overflow:ellipsis;white-space:nowrap;',
-        style: 'display:flex;align-items:center;gap:10px;padding:11px 12px;border-top:2px solid #1d2440;background:' + (perfect ? '#1d1a2c' : '#12172b') + ';' + (dim ? 'opacity:0.55;' : ''),
+        labelStyle: 'min-width:0;flex:1;font-size:14px;font-weight:700;color:' + (dim ? '#8B93AB' : '#EDF0F7') + ';overflow:hidden;text-overflow:ellipsis;white-space:nowrap;',
+        // 잠금 행 감쇠는 opacity가 아니라 어두운 배경으로 — opacity는 텍스트 대비를
+        // 1.87:1까지 떨어뜨려 AA 미달이었다 (ux A-3). 행은 2줄 구성 (ux B-4).
+        style: 'display:flex;flex-direction:column;gap:6px;padding:11px 12px;border-top:2px solid #1d2440;background:' + (perfect ? '#1d1a2c' : dim ? '#0b0f1d' : '#12172b') + ';',
         blocks: Array.from({ length: 12 }, (_, i) => ({
           style: 'flex:1;height:10px;border-radius:1px;background:' + (played && i < r.score ? (perfect ? '#C9A227' : '#FFD400') : '#232b47') + ';'
         })),
         score: played ? r.score + '/12' : r.open ? '진행 중' : '-',
-        scoreStyle: 'width:52px;text-align:right;font-family:' + NUM + ';font-variant-numeric:tabular-nums;font-weight:700;font-size:' + (played ? '15px;color:' + (perfect ? '#C9A227' : '#FFD400') : '12px;color:#5E6A8C') + ';'
+        scoreStyle: 'width:52px;flex:0 0 auto;text-align:right;font-family:' + NUM + ';font-variant-numeric:tabular-nums;font-weight:700;font-size:' + (played ? '15px;color:' + (perfect ? '#C9A227' : '#FFD400') : '12px;color:#8B93AB') + ';'
       };
     });
 

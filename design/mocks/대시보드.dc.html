@@ -93,7 +93,7 @@
 
         <button type="button" onClick="{{ toggleMore }}" style="width: 100%; min-height: 48px; border-radius: 4px; background: #161d33; border: 3px solid #3a4468; box-shadow: 4px 4px 0 #070a16; color: #C6CEE4; font-size: 15px; font-weight: 700; cursor: pointer;" style-active="transform: translate(3px, 3px); box-shadow: 1px 1px 0 rgba(0,0,0,0.6);">{{ moreLabel }}</button>
 
-        <div style="border: 3px solid #FFD400; border-radius: 4px; background: #1c2138; display: grid; grid-template-columns: 44px 1fr 1fr 64px; align-items: center; gap: 8px; padding: 11px 12px; font-size: 14px;">
+        <div style="border: 3px solid #FFD400; border-radius: 4px; background: #1c2138; display: grid; grid-template-columns: 32px minmax(0,1.5fr) minmax(0,1fr) 62px; align-items: center; gap: 6px; padding: 11px 12px; font-size: 14px;">
           <div style="font-family: 'Chakra Petch', ui-monospace, monospace; font-variant-numeric: tabular-nums; font-weight: 700; color: #FFD400;">{{ myRank }}</div>
           <div style="font-weight: 700; color: #EDF0F7; display: flex; align-items: center; gap: 6px;"><span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ myName }}</span><span style="flex: 0 0 auto; font-size: 10px; font-weight: 800; background: #FFD400; color: #12172b; padding: 2px 5px; border-radius: 2px;">{{ myBadge }}</span></div>
           <div style="color: #8B93AB; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ mySub }}</div>
@@ -122,14 +122,17 @@
 </div>
 </x-dc>
 <script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:760,&quot;height&quot;:1120}}">
-const NAMES = ['소화기달인','비상구지킴이','무재해챌린저','초록불','헬멧쓴곰','골든벨울림','아차사고헌터','침착맨손','반보앞','체크리스트','오늘도무사히','예방주사','현장의눈','완강기마스터','스프링클러','평정심','금요일마감','대피로안내자','안전제일주의','건널목'];
-const ORGS = ['서울지역본부','부산지역본부','경기지사','본부 능력개발국','인천지사','대구지역본부','본부 자격시험국','광주지역본부','대전지역본부','울산지사'];
-const DEPTS = ['안전보건팀','능력개발팀','자격시험팀','경영지원팀','디지털혁신팀','국제협력팀','교육운영팀','고객지원팀','기획조정팀','시설관리팀','홍보팀','인재채용팀','정보보호팀','회계팀','법무팀','상생협력팀','연구개발팀','품질관리팀','자산관리팀','총무팀'];
+// 닉네임은 signup zod 상한 12자까지 허용 — 최장값이 앞에 와야 폭 문제가 목업에 드러난다
+const NAMES = ['열두글자닉네임입니다','대피로안내자','무재해챌린저','초록불','헬멧쓴곰','골든벨울림','아차사고헌터','침착맨손','반보앞','체크리스트','오늘도무사히','예방주사','현장의눈','완강기마스터','스프링클러','평정심','금요일마감','소화기달인','안전제일주의','건널목'];
+// 실시드 org_unit (최장 '글로벌숙련기술진흥원' 10자)
+const ORGS = ['글로벌숙련기술진흥원','국외 EPS 센터','AI디지털정보국','서울지역본부','ESG안전센터','기술자격출제실','자격품질관리국','직무능력표준국','지역산업협력국','부산지역본부'];
+// 실시드 department (최장 '원주기업인재혁신센터' 10자)
+const DEPTS = ['원주기업인재혁신센터','능력개발조사분석부','글로벌HRD협력부','원격훈련모니터링부','안전서비스출제부','신성장산업출제부','AI데이터기획부','일학습과정개발부','직업능력개발부','자격시험부','기업지원부','인재개발부','경영지원부','디지털혁신부','국제협력부','교육운영부','고객지원부','기획조정부','시설관리부','홍보부'];
 
 const TABS = [
   { key: 'total', label: '전체 누적' },
   { key: 'round', label: '회차별' },
-  { key: 'avg', label: '평균 점수' },
+  { key: 'avg', label: '평균 포인트' },
   { key: 'dept', label: '부서' }
 ];
 
@@ -140,24 +143,26 @@ function build(key) {
     return DEPTS.map((d, i) => ({
       rank: i + 1, name: d,
       sub: (28 - i) + '명',
-      value: (11.9 - i * 0.18).toFixed(1)
+      value: (2380 - i * 19.3).toFixed(1)
     }));
   }
   return NAMES.map((n, i) => {
     const org = ORGS[i % ORGS.length];
-    if (key === 'round') return { rank: i + 1, name: n, sub: org, value: i < 4 ? '12' : String(11 - Math.floor(i / 5)) };
-    if (key === 'avg') return { rank: i + 1, name: n, sub: org, value: (12 - i * 0.15).toFixed(2) };
-    return { rank: i + 1, name: n, sub: org, value: String(36 - Math.floor(i * 0.8)) };
+    if (key === 'round') return { rank: i + 1, name: n, sub: org, value: (2400 - i * 63).toLocaleString('ko-KR') };
+    if (key === 'avg') return { rank: i + 1, name: n, sub: org, value: (2400 - i * 17.1).toFixed(1) };
+    return { rank: i + 1, name: n, sub: org, value: (19200 - i * 137).toLocaleString('ko-KR') };
   });
 }
 
+// 표 헤더·탭 문안은 copy.md 87·89행 확정값. 목업이 N항(포인트 도입) 이전
+// '점수/평균'으로 남아 있어 구현과 어긋나 있었다.
 const HEADS = {
-  total: ['순위', '닉네임', '소속', '점수'],
-  round: ['순위', '닉네임', '소속', '점수'],
-  avg: ['순위', '닉네임', '소속', '평균'],
-  dept: ['순위', '부서', '참여자', '평균']
+  total: ['순위', '닉네임', '소속', '포인트'],
+  round: ['순위', '닉네임', '소속', '포인트'],
+  avg: ['순위', '닉네임', '소속', '평균 포인트'],
+  dept: ['순위', '부서', '참여자', '평균 포인트']
 };
-const MYVAL = { total: '23', round: '11', avg: '11.50', dept: '11.2' };
+const MYVAL = { total: '14,820', round: '1,980', avg: '1852.5', dept: '1806.4' };
 
 class Component extends DCLogic {
   state = { tab: 'total', more: false };
@@ -173,7 +178,7 @@ class Component extends DCLogic {
 
     const all = build(s.tab);
     const shown = s.more ? all.slice(0, 20) : all.slice(0, 5);
-    const grid = 'display:grid;grid-template-columns:44px 1fr 1fr 64px;align-items:center;gap:8px;padding:11px 12px;font-size:14px;';
+    const grid = 'display:grid;grid-template-columns:32px minmax(0,1.5fr) minmax(0,1fr) 62px;align-items:center;gap:6px;padding:11px 12px;font-size:14px;';
 
     const rows = shown.map(r => {
       const top1 = r.rank === 1, top3 = r.rank <= 3;
@@ -190,16 +195,16 @@ class Component extends DCLogic {
 
     return {
       tabs, rows,
-      headCells: HEADS[s.tab].map((h, i) => ({ label: h, style: 'font-size:12px;font-weight:800;letter-spacing:0.08em;color:#8B93AB;' + (i === 3 ? 'text-align:right;' : '') })),
-      headStyle: 'display:grid;grid-template-columns:44px 1fr 1fr 64px;gap:8px;padding:9px 12px;background:#161d33;',
+      headCells: HEADS[s.tab].map((h, i) => ({ label: h, style: 'font-size:12px;font-weight:800;letter-spacing:0.08em;white-space:nowrap;color:#8B93AB;' + (i === 3 ? 'text-align:right;' : '') })),
+      headStyle: 'display:grid;grid-template-columns:32px minmax(0,1.5fr) minmax(0,1fr) 62px;gap:6px;padding:9px 12px;background:#161d33;',
       deptNotice: s.tab === 'dept',
       toggleMore: () => this.setState(st => ({ more: !st.more })),
       moreLabel: s.more ? '접기' : '더보기',
       myValue: MYVAL[s.tab],
       myRank: s.tab === 'dept' ? '3' : '47',
-      myName: s.tab === 'dept' ? '안전보건팀' : '한걸음',
+      myName: s.tab === 'dept' ? '원주기업인재혁신센터' : '열두글자닉네임입니다',
       myBadge: s.tab === 'dept' ? '우리 부서' : '나',
-      mySub: s.tab === 'dept' ? '12명' : '서울지역본부'
+      mySub: s.tab === 'dept' ? '12명' : '글로벌숙련기술진흥원'
     };
   }
 }

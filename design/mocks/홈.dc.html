@@ -83,7 +83,7 @@
               <div style="display: flex; flex-direction: column; gap: 4px;">
                 <div style="display: flex; align-items: center; gap: 8px;">
                   <span style="font-family: 'Chakra Petch', ui-monospace, monospace; font-weight: 700; font-size: 13px; background: #FFD400; color: #12172b; padding: 2px 7px; border-radius: 2px;">3회차</span>
-                  <span style="font-size: 17px; font-weight: 800; color: #FFFFFF;">온열질환</span>
+                  <span style="min-width: 0; flex: 1 1 0%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 17px; font-weight: 800; color: #FFFFFF;">불, 처음 3분이 전부다</span>
                 </div>
                 <div style="display: flex; align-items: center; gap: 6px; font-size: 13px; color: #8B93AB;">
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8.5" stroke="currentColor" stroke-width="2.4"></circle><path d="M12 7.5V12l3 2.2" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"></path></svg>
@@ -109,9 +109,8 @@
           <div style="border: 3px solid #C9A227; border-radius: 4px; background: #161d33; padding: 13px 14px; display: flex; flex-direction: column; gap: 10px;">
             <div style="display: flex; align-items: center; gap: 8px;">
               <span style="font-family: 'Chakra Petch', ui-monospace, monospace; font-weight: 700; font-size: 12px; border: 2px solid #5E6A8C; color: #8B93AB; padding: 1px 6px; border-radius: 2px;">2회차</span>
-              <span style="font-size: 15px; font-weight: 700; color: #EDF0F7;">밀폐공간 작업</span>
-              <div style="flex: 1;"></div>
-              <span style="display: flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 800; color: #C9A227;">
+              <span style="min-width: 0; flex: 1 1 0%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 15px; font-weight: 700; color: #EDF0F7;">여름을 안전하게 — 온열질환과 건강</span>
+              <span style="flex: 0 0 auto; display: flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 800; color: #C9A227;">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M12 3c-3.1 0-5.2 2.3-5.2 5.4v3.4L5 14.4v1.2h14v-1.2l-1.8-2.6V8.4C17.2 5.3 15.1 3 12 3z" fill="#C9A227"></path><path d="M10.2 17.4a1.9 1.9 0 0 0 3.6 0h-3.6z" fill="#C9A227"></path></svg>
                 <span style="font-family: 'Chakra Petch', ui-monospace, monospace;">참여 완료 12/12</span>
               </span>
@@ -125,9 +124,8 @@
           <div style="border: 3px solid #262f4d; border-radius: 4px; background: #161d33; padding: 13px 14px; display: flex; flex-direction: column; gap: 10px;">
             <div style="display: flex; align-items: center; gap: 8px;">
               <span style="font-family: 'Chakra Petch', ui-monospace, monospace; font-weight: 700; font-size: 12px; border: 2px solid #5E6A8C; color: #8B93AB; padding: 1px 6px; border-radius: 2px;">1회차</span>
-              <span style="font-size: 15px; font-weight: 700; color: #EDF0F7;">심폐소생술</span>
-              <div style="flex: 1;"></div>
-              <span style="font-size: 12px; font-weight: 700; color: #8B93AB; font-family: 'Chakra Petch', ui-monospace, monospace;">참여 완료 11/12</span>
+              <span style="min-width: 0; flex: 1 1 0%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 15px; font-weight: 700; color: #EDF0F7;">안전, 우리 이야기로 시작하기</span>
+              <span style="flex: 0 0 auto; font-size: 12px; font-weight: 700; color: #8B93AB; font-family: 'Chakra Petch', ui-monospace, monospace;">참여 완료 11/12</span>
             </div>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
               <button type="button" style="min-height: 44px; border-radius: 3px; background: #232b47; border: 2px solid #3a4468; color: #C6CEE4; font-size: 13px; font-weight: 700; cursor: pointer;" style-active="transform: translate(1px, 1px);">결과 보기</button>
@@ -135,11 +133,12 @@
             </div>
           </div>
 
-          <div style="border: 3px dashed #262f4d; border-radius: 4px; background: transparent; padding: 13px 14px; display: flex; align-items: center; gap: 8px;">
-            <span style="font-family: 'Chakra Petch', ui-monospace, monospace; font-weight: 700; font-size: 12px; border: 2px solid #2f3a5e; color: #5E6A8C; padding: 1px 6px; border-radius: 2px;">4회차</span>
-            <span style="font-size: 15px; font-weight: 700; color: #5E6A8C;">추락·낙하 예방</span>
-            <div style="flex: 1;"></div>
-            <span style="font-size: 13px; font-weight: 700; color: #7A85A6;">아직 열리지 않았습니다</span>
+          <!-- 미개방 행만 테마 2줄 허용: 우측 문안이 118px라 테마 몫이 128px뿐이고
+               잘라내면 절반이 사라진다. 어절 단위로 2줄에 전문이 들어간다 (ux B-3) -->
+          <div style="border: 3px dashed #262f4d; border-radius: 4px; background: transparent; padding: 13px 14px; display: flex; align-items: flex-start; gap: 8px;">
+            <span style="flex: 0 0 auto; font-family: 'Chakra Petch', ui-monospace, monospace; font-weight: 700; font-size: 12px; border: 2px solid #2f3a5e; color: #5E6A8C; padding: 1px 6px; border-radius: 2px;">4회차</span>
+            <span style="min-width: 0; flex: 1 1 0%; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; font-size: 15px; font-weight: 700; color: #5E6A8C;">나가는 길을 알고 있는가</span>
+            <span style="flex: 0 0 auto; font-size: 13px; font-weight: 700; color: #7A85A6;">아직 열리지 않았습니다</span>
           </div>
         </div>
       </div>
