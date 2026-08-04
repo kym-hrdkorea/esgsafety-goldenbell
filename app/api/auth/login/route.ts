@@ -4,6 +4,7 @@ import { z } from "zod";
 import { getDb } from "@/lib/db";
 import { getConfigValue } from "@/lib/config";
 import { issueSession } from "@/lib/session";
+import { registerFailedAttempt, clearFailedAttempts } from "@/lib/login-lock";
 
 export const dynamic = "force-dynamic";
 
@@ -69,45 +70,26 @@ export async function POST(req: NextRequest) {
     const ok = await bcrypt.compare(body.pin, p.password_hash);
 
     if (!ok) {
-      const maxAttempts = await getConfigValue("login_max_attempts");
-      const lockMinutes = await getConfigValue("login_lock_minutes");
-
-      // 만료된 잠금이 남아 있으면 연속 실패 카운트를 새로 시작한다
-      const priorFails =
-        p.locked_until && new Date(p.locked_until).getTime() <= now
-          ? 0
-          : p.failed_attempts;
-      const fails = priorFails + 1;
-
-      if (fails >= maxAttempts) {
-        // 5번째 실패 응답에서 이미 423 (addendum I항)
-        const until = new Date(now + lockMinutes * 60_000).toISOString();
-        const { error: updErr } = await db
-          .from("participant")
-          .update({ failed_attempts: fails, locked_until: until })
-          .eq("id", p.id);
-        if (updErr) throw new Error(updErr.message);
-        return locked(until);
-      }
-
-      const { error: updErr } = await db
-        .from("participant")
-        .update({ failed_attempts: fails, locked_until: null })
-        .eq("id", p.id);
-      if (updErr) throw new Error(updErr.message);
-      return INVALID();
+      const [maxAttempts, lockMinutes] = await Promise.all([
+        getConfigValue("login_max_attempts"),
+        getConfigValue("login_lock_minutes"),
+      ]);
+      // 카운터 증가는 낙관적 동시성으로 원자화한다 — 동시 요청이 같은 값을 읽고
+      // 같은 값을 쓰면 잠금 자체가 무력화된다 (lib/login-lock.ts)
+      const outcome = await registerFailedAttempt(
+        "participant",
+        p,
+        maxAttempts,
+        lockMinutes
+      );
+      // 5번째 실패 응답에서 이미 423 (addendum I항)
+      return outcome.kind === "locked" ? locked(outcome.lockedUntil) : INVALID();
     }
 
-    // 성공: 카운터 초기화 (A8)
-    const { error: updErr } = await db
-      .from("participant")
-      .update({
-        failed_attempts: 0,
-        locked_until: null,
-        last_login_at: new Date(now).toISOString(),
-      })
-      .eq("id", p.id);
-    if (updErr) throw new Error(updErr.message);
+    // 성공: 카운터 초기화 (A8).
+    // 그 사이 다른 요청의 실패가 잠금을 걸었으면 올바른 PIN이어도 423 유지 (A7)
+    const cleared = await clearFailedAttempts("participant", p);
+    if (!cleared.ok) return locked(cleared.lockedUntil);
 
     const dept = p.department as unknown as { name: string };
     const unit = p.org_unit as unknown as { name: string };

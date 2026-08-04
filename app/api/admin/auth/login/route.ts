@@ -4,6 +4,7 @@ import { z } from "zod";
 import { getDb } from "@/lib/db";
 import { getConfigValue } from "@/lib/config";
 import { issueAdminSession } from "@/lib/session";
+import { registerFailedAttempt, clearFailedAttempts } from "@/lib/login-lock";
 
 export const dynamic = "force-dynamic";
 
@@ -95,39 +96,20 @@ export async function POST(req: NextRequest) {
     const ok = await bcrypt.compare(body.password, a.password_hash);
 
     if (!ok) {
-      const priorFails =
-        a.locked_until && new Date(a.locked_until).getTime() <= now
-          ? 0
-          : a.failed_attempts;
-      const fails = priorFails + 1;
-
-      if (fails >= maxAttempts) {
-        const until = new Date(now + lockMinutes * 60_000).toISOString();
-        const { error: updErr } = await db
-          .from("admin_user")
-          .update({ failed_attempts: fails, locked_until: until })
-          .eq("id", a.id);
-        if (updErr) throw new Error(updErr.message);
-        return locked(until, maxAttempts);
-      }
-
-      const { error: updErr } = await db
-        .from("admin_user")
-        .update({ failed_attempts: fails, locked_until: null })
-        .eq("id", a.id);
-      if (updErr) throw new Error(updErr.message);
-      return INVALID();
+      // 참가자 로그인과 동일한 낙관적 동시성 (lib/login-lock.ts)
+      const outcome = await registerFailedAttempt(
+        "admin_user",
+        a,
+        maxAttempts,
+        lockMinutes
+      );
+      return outcome.kind === "locked"
+        ? locked(outcome.lockedUntil, maxAttempts)
+        : INVALID();
     }
 
-    const { error: updErr } = await db
-      .from("admin_user")
-      .update({
-        failed_attempts: 0,
-        locked_until: null,
-        last_login_at: new Date(now).toISOString(),
-      })
-      .eq("id", a.id);
-    if (updErr) throw new Error(updErr.message);
+    const cleared = await clearFailedAttempts("admin_user", a);
+    if (!cleared.ok) return locked(cleared.lockedUntil, maxAttempts);
 
     const res = NextResponse.json({ loginId: a.login_id });
     issueAdminSession(res, a.id);
