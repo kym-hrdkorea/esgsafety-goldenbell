@@ -42,16 +42,12 @@ export async function POST(
     const round = await loadRound(no);
     if (!round) return apiError(404, "NOT_FOUND");
 
-    const state = roundState(round);
-    if (state !== "open") {
-      return apiError(
-        403,
-        "ROUND_NOT_OPEN",
-        state === "locked" ? MSG.notOpen : MSG.closed
-      );
-    }
-
-    // 1인 1회차 1회 — 기존 세션이 있으면 새로 만들지 않는다 (C1·C2)
+    // 1인 1회차 1회 — 기존 세션이 있으면 새로 만들지 않는다 (C1·C2).
+    // ★ 회차 상태 검사보다 먼저 한다: 진행 중 세션의 재개는 회차 마감과 무관하다
+    //   (test-scenarios B4 "시작 후 마감 시각은 세션 진행에 영향 없음").
+    //   item/answer/next 도 같은 이유로 회차 상태를 검사하지 않는다 —
+    //   개방 게이트는 '신규 생성'에만 건다. 순서를 되돌리면 금요일 자정을 넘긴
+    //   응시자가 자기 세션에 접근하지 못하고, 복습 화면과 무한 리다이렉트에 빠진다.
     let existing = await loadSession(pid, no);
     if (existing) {
       // 30분 방치 세션은 재개 대신 만료 확정 → 아래 409로 결과 화면 유도 (F2, K항)
@@ -62,6 +58,16 @@ export async function POST(
       return apiError(409, "ALREADY_COMPLETED", MSG.alreadyCompleted, {
         status: existing.status,
       });
+    }
+
+    // 신규 생성만 개방 상태를 요구한다 (B1·B2·B3)
+    const state = roundState(round);
+    if (state !== "open") {
+      return apiError(
+        403,
+        "ROUND_NOT_OPEN",
+        state === "locked" ? MSG.notOpen : MSG.closed
+      );
     }
 
     const db = getDb();
