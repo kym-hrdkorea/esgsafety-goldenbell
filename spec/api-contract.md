@@ -30,6 +30,22 @@ res  200 { nickname, orgUnitName, departmentName }
 err  401 INVALID_CREDENTIALS, 423 LOCKED { lockedUntil }
 ```
 
+### `POST /api/auth/reset-pin`
+비밀번호 자율 재설정. → addendum O항
+```
+req  { empNo, nickname, departmentId, newPin }
+res  200 { ok: true }
+err  401 VERIFICATION_FAILED, 429 TOO_MANY_REQUESTS, 400 VALIDATION
+```
+- 실패 응답은 **사번 부재·닉네임 불일치·부서 불일치를 구분하지 않는다**(열거 차단).
+  세 조건을 단일 쿼리 WHERE에 넣어 핸들러가 "사번은 있는데 나머지가 틀렸다"는 사실을
+  아예 갖지 못하게 한다.
+- **`423`을 반환하지 않으며 `lockedUntil`을 노출하지 않는다.** 잠금은 존재하는 행만 갖는
+  속성이라 잠금 파생 필드는 전부 존재 여부 오라클이다. 잠금 여부와 무관하게 처리한다.
+- 실패는 `failed_attempts`를 증가시키지 않는다. 성공 시 `failed_attempts=0, locked_until=NULL`.
+- **세션을 발급하지 않는다.** 성공 응답에 닉네임·부서명도 담지 않는다(`{ ok: true }`만).
+- 응답 시간 하한 700ms — 성공·실패·검증오류·과다요청 전 경로에 적용(타이밍 채널 차단).
+
 ### `POST /api/auth/logout` → `204`
 ### `GET /api/me` → `{ nickname, orgUnitName, departmentName, totalScore, roundsTaken, totalRank }`
 - `totalRank` = 포인트 기준 누적 순위(홈 요약 카드용). 본인 행 1건만 `v_rank_total` 직접 조회 — addendum B항. 순위 미대상(미응시·최소 회차 미달)이면 `null`.

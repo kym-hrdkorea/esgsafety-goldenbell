@@ -43,6 +43,7 @@
   /* Shadow: blur 없는 offset 전용 */
   --shadow-gb-card: 4px 4px 0 #070a16;
   --shadow-gb-cta: 5px 5px 0 #6b5200;
+  --shadow-gb-cta-sub: 5px 5px 0 #070a16;
   --shadow-gb-frame: 10px 10px 0 #05070f;
   --shadow-gb-pressed: 1px 1px 0 rgba(0, 0, 0, 0.6);
 
@@ -147,6 +148,30 @@ body {
   }
   .gb-cta:disabled:active {
     transform: none;
+  }
+
+  /* 보조 CTA. 크기·눌림감은 .gb-cta와 동일하게 두고 채움만 남색 — 주/부 위계.
+     .gb-cta는 <button>에만 쓰여 텍스트가 자동 중앙 정렬되지만 이쪽은 <a>도 받으므로
+     정렬을 명시한다. */
+  .gb-cta-sub {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-height: 56px;
+    border-radius: 4px;
+    background: var(--color-gb-bg-block);
+    border: 3px solid var(--color-gb-border-card);
+    box-shadow: var(--shadow-gb-cta-sub);
+    color: var(--color-gb-text-primary);
+    font-size: 18px;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+  }
+  .gb-cta-sub:active {
+    transform: translate(4px, 4px);
+    box-shadow: var(--shadow-gb-pressed);
   }
 
   .gb-field-error {

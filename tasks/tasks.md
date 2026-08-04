@@ -92,3 +92,16 @@
 - 응답시간 300ms 목표 확인, 느린 쿼리 인덱스 보정
 - 최종 점검: 정답 미전송 / measure_code 미전송 / 재응시 차단 / 잠금 동작 / 타이머 우회 불가
 - **완료 조건**: 100 VU에서 오류율 0%, p95 < 500ms
+## T13 — 비밀번호 자율 재설정 + 로그인 버튼 위계
+- `POST /api/auth/reset-pin`: 사번+닉네임+부서 **단일 쿼리** 검증 → 새 PIN 설정.
+  `lib/login-lock.ts`를 import하지 않는다(잠금 연장·`last_login_at` 오염 버그).
+  실패는 카운터 미변경, 성공은 `failed_attempts=0, locked_until=NULL` 동시 초기화.
+  세션 미발급 · `423` 미반환 · 동일 PIN 검사 없음 · 닉네임 trim 없음.
+- `lib/reset-throttle.ts`: IP당 20/시간 + 인스턴스 전역 40/시간 + 응답 하한 700ms.
+- `app/(auth)/reset-pin/page.tsx`: 2단계 위저드(제출은 1회), 부서 단일 검색.
+- 로그인 화면: `회원가입`을 `gb-cta-sub`(남색 56px 전폭) 버튼으로 승격 + `비밀번호를 잊으셨나요?` 링크.
+- 기존 버그 동반 수정: `login/route.ts` 미가입 사번 타이밍 오라클(더미 해시 대조).
+- 감수한 위험 R1~R9와 운영 런북은 addendum O항.
+- **완료 조건**: `.t13-verify.mjs` 10개 검사 통과. 특히 ① 없는 사번 ② 틀린 닉네임
+  ③ 틀린 부서의 응답이 status·code·message까지 완전히 동일하고, 검증 실패 3회 후에도
+  `failed_attempts`가 0이며, 잠금 상태에서 재설정 후 즉시 로그인이 된다.

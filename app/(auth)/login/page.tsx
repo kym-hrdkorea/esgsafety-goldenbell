@@ -141,15 +141,15 @@ export default function LoginPage() {
           <button type="submit" className="gb-cta" disabled={locked || submitting}>
             로그인
           </button>
-          <div className="text-center text-[14px] text-gb-text-secondary">
-            아직 가입하지 않으셨나요?{" "}
-            <Link
-              href="/signup"
-              className="font-bold text-gb-yellow underline underline-offset-[3px] hover:text-gb-yellow-light"
-            >
-              회원가입
-            </Link>
-          </div>
+          <Link href="/signup" className="gb-cta-sub">
+            회원가입
+          </Link>
+          <Link
+            href="/reset-pin"
+            className="text-center text-[14px] font-bold text-gb-text-secondary underline underline-offset-[3px] hover:text-gb-text-body"
+          >
+            비밀번호를 잊으셨나요?
+          </Link>
         </div>
       </form>
     </main>
