@@ -142,7 +142,7 @@ async function refresh() {
   );
   refreshed.push("org_unit");
 
-  // ② 회차별 — 확정 세션이 있는 회차만 행이 생긴다
+  // ② 회차별 — 확정 세션이 있는 회차만 뷰에 행이 생긴다.
   const { data: roundRows, error: rErr } = await db
     .from("v_rank_round")
     .select("round_no, rank, nickname, org_unit_name, points, score, pct")
@@ -163,10 +163,36 @@ async function refresh() {
     });
     byRound.set(r.round_no, list);
   }
-  for (const [no, payload] of byRound) {
-    await upsertSnapshot("round", no, payload, nowIso);
+
+  // 뷰에 남은 회차만 돌면 세션이 전부 사라진 회차의 옛 payload가 스냅샷에 그대로
+  // 남아 '회차별' 탭에 유령 순위로 계속 노출된다. 시작된 회차 전체를 순회해
+  // 빈 회차는 []로 덮어쓴다 — total/average/department/org_unit과 같은 방식이다.
+  // 시작 판정은 대시보드 회차 선택칩(roundState의 locked 제외)과 동일하게 맞춘다.
+  const { data: started, error: sErr } = await db
+    .from("quiz_round")
+    .select("round_no")
+    .eq("is_published", true)
+    .lte("opens_at", nowIso);
+  if (sErr) throw new Error(sErr.message);
+
+  // 운영 중 회차를 되돌리는 등으로 뷰에만 남은 회차가 생겨도 빠뜨리지 않는다
+  const targets = [
+    ...new Set([...(started ?? []).map((r) => r.round_no), ...byRound.keys()]),
+  ].sort((a, b) => a - b);
+  for (const no of targets) {
+    await upsertSnapshot("round", no, byRound.get(no) ?? [], nowIso);
     refreshed.push(`round:${no}`);
   }
+
+  // 대상에서 빠진 회차(비공개 전환 등)의 스냅샷 행은 남겨두지 않는다.
+  // /api/dashboard/round/[no]는 행이 없으면 []를 반환하므로 결과는 동일하다.
+  let del = db.from("ranking_snapshot").delete().eq("kind", "round");
+  if (targets.length > 0) {
+    del = del.not("round_no", "in", `(${targets.join(",")})`);
+  }
+  const { data: removed, error: dropErr } = await del.select("round_no");
+  if (dropErr) throw new Error(dropErr.message);
+  for (const r of removed ?? []) refreshed.push(`round:${r.round_no}:removed`);
 
   return { skipped: false as const, refreshed, computedAt: nowIso };
 }
