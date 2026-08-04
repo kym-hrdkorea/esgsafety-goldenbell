@@ -18,5 +18,13 @@ next-env.d.ts
 # local-only settings
 .claude/settings.local.json
 
+# 에이전트 작업 트리 (.git/info/exclude 에서 이동 — exclude 는 공유·리뷰가 안 된다)
+.claude/worktrees/
+
 # 외부 에이전트 산출물 (Codex 감사 등)
 .codex/
+
+# 로컬 검증·운영 스크래치 — 커밋 금지.
+# service role 로 실DB를 조작하므로 저장소에 남으면 안 된다.
+/.t*-verify.mjs
+/.pilot-*.json
