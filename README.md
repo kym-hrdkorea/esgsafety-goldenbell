@@ -21,19 +21,27 @@ db/
 spec/
   functional-spec.md       기능 명세 + 만들지 않는 것
   business-rules.md        채점·타이머·순위 규칙 ★★ 가장 중요
-  api-contract.md          API 계약 (23개 엔드포인트)
+  decisions-addendum.md    확정 결정 A~M·G-1~G-3·N ★ B·C·D·E·F·K항은 이 문서에만 있다
+  api-contract.md          API 계약 (24개 엔드포인트)
   test-scenarios.md        테스트 케이스 50여 건
 
 design/
+  1_claude-design.md       Claude Design 전달 프롬프트 (톤·가드레일 원본)
   design-brief.md          Claude Design 브리프
-  copy.md                  화면 문안 (확정)
+  copy.md                  화면 문안 (확정) — 규칙 9의 유일 출처
   screens.md               라우트 + 플로우 + 상태
+  sample-items.md          문항 샘플 (디자인 검토용)
+  handoff.md               디자인 → 구현 핸드오프
+  tokens.css               색·타이포 토큰
+  mocks/                   확정 목업 11종 (.dc.html)
 
-tasks/tasks.md             작업 카드 T00~T12 (수직 슬라이스)
+tasks/
+  tasks.md                 작업 카드 T00~T12 (수직 슬라이스)
+  ux-findings.md           참가자 화면 UI/UX 감사 (A·B절 완료, C절 미해결)
+  code-review-findings.md  전체 코드 리뷰 66건 (2026-08-03)
 prompts/
-  1_claude-design.md       Claude Design 전달 프롬프트
   2_codex-review.md        Codex 검증 프롬프트 (설계/코드)
-  3_claude-code-kickoff.md Claude Code 시작 프롬프트
+  claude-code-runbook.md   Claude Code 실행 런북 (P0~P7, P5 감사 12항목)
 .env.example               환경변수 명세
 ```
 
@@ -44,7 +52,9 @@ Supabase 프로젝트 생성 후 SQL Editor에서 순서대로 실행.
 ```
 01_schema.sql → 02_seed_org.sql → 03_seed_rounds.sql → 04_seed_items.sql → 05_views.sql
 ```
-⚠️ `03_seed_rounds.sql`의 `opens_at`/`closes_at`은 **예시값**이다. 실제 일정으로 수정 후 실행.
+`03_seed_rounds.sql`의 `opens_at`/`closes_at`은 **확정 일정**이다(2026-08-17 개시, 8회차 10/09 마감).
+실DB와 항상 정합해야 하며, 일정이 바뀌면 시드 재실행이 아니라 8행 절대값 UPDATE로 조정하고
+이 파일도 같은 값으로 함께 고친다.
 
 확인 쿼리
 ```sql
@@ -60,11 +70,11 @@ SELECT item_type, count(*) FROM quiz_item GROUP BY 1;
 **구현 전에 스키마·명세 불일치를 잡는다.** 구현 후 발견하면 마이그레이션 작업이 붙는다.
 
 ### 2단계 — 디자인 (Claude Design, 병렬 진행)
-`prompts/1_claude-design.md` 사용. 응시 화면 답변/해설 단계를 먼저 확정한다.
+`design/1_claude-design.md` 사용. 응시 화면 답변/해설 단계를 먼저 확정한다.
 **구현보다 먼저 돌린다** — 퀴즈 앱은 UI가 곧 제품이고, 나중에 얹으면 상태 구조가 어긋난다.
 
 ### 3단계 — 구현 (Claude Code, 2~3주)
-`prompts/3_claude-code-kickoff.md`로 시작.
+`prompts/claude-code-runbook.md`로 시작.
 `CLAUDE.md`와 `AGENTS.md`를 리포 루트에 배치할 것.
 T00부터 카드 단위로, 하나 끝날 때마다 확인.
 
