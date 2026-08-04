@@ -103,7 +103,7 @@ async function refresh() {
   // ④ 부서 (참여자 3명 이상 — 뷰가 거른다)
   const { data: dept, error: dErr } = await db
     .from("v_rank_department")
-    .select("rank, department_name, org_unit_name, participants, avg_points")
+    .select("rank, department_id, department_name, org_unit_name, participants, avg_points")
     .lte("rank", maxRows)
     .order("rank");
   if (dErr) throw new Error(dErr.message);
@@ -112,6 +112,9 @@ async function refresh() {
     null,
     (dept ?? []).map((r) => ({
       rank: Number(r.rank),
+      // 부서명은 유일하지 않다 — 193개 중 108개가 동명이다('직업능력개발부' 32곳).
+      // 화면의 '우리 부서' 배지 판정은 반드시 이 id로 한다.
+      departmentId: Number(r.department_id),
       departmentName: r.department_name,
       orgUnitName: r.org_unit_name,
       participants: Number(r.participants),

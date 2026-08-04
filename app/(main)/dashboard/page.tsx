@@ -8,7 +8,7 @@ import { requestBgm } from "@/lib/sound";
 type Dashboard = {
   me: {
     nickname: string;
-    departmentName: string;
+    departmentId: number;
     totalScore: number;
     totalPoints: number;
     roundsTaken: number;
@@ -21,7 +21,8 @@ type Dashboard = {
   };
   total: { rank: number; nickname: string; orgUnitName: string; totalPoints: number; roundsTaken: number }[];
   average: { rank: number; nickname: string; orgUnitName: string; avgPoints: number; roundsTaken: number }[];
-  department: { rank: number; departmentName: string; orgUnitName: string; participants: number; avgPoints: number }[];
+  // departmentId는 구 스냅샷(갱신 전)에 없을 수 있다 — 배지 판정에서 optional로 다룬다
+  department: { rank: number; departmentId?: number; departmentName: string; orgUnitName: string; participants: number; avgPoints: number }[];
   computedAt: string | null;
   visibleRows: number;
 };
@@ -53,7 +54,7 @@ const HEADERS: Record<TabKey, [string, string, string, string]> = {
   total: ["순위", "닉네임", "소속", "포인트"],
   round: ["순위", "닉네임", "소속", "포인트"],
   average: ["순위", "닉네임", "소속", "평균 포인트"],
-  department: ["순위", "부서", "참여자", "평균 포인트"],
+  department: ["순위", "부서", "소속", "평균 포인트"],
 };
 
 // "07.30 14:00 기준" — 표시 전용 Asia/Seoul 변환 (판정은 항상 서버)
@@ -178,9 +179,12 @@ export default function DashboardPage() {
           ? dash.department.map((r) => ({
               rank: r.rank,
               name: r.departmentName,
-              sub: `${r.participants}명`,
+              // 동명 부서가 108개라 이름만으로는 어느 행이 내 부서인지 구분할 수 없다.
+              // 다른 3개 탭과 동일하게 sub 열에 소속명을 표시한다.
+              sub: r.orgUnitName,
               value: r.avgPoints.toFixed(1),
-              isMe: r.departmentName === me.departmentName,
+              // 구 스냅샷(departmentId 부재)에서는 배지를 붙이지 않는다 — 틀린 배지보다 낫다
+              isMe: r.departmentId != null && r.departmentId === me.departmentId,
             }))
           : (selectedRound !== null ? (roundCache[selectedRound] ?? []) : []).map(
               (r) => ({

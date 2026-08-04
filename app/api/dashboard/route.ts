@@ -25,7 +25,7 @@ export async function GET(req: NextRequest) {
     const [pRes, sesRes] = await Promise.all([
       db
         .from("participant")
-        .select("nickname, department_id, department:department_id(name)")
+        .select("nickname, department_id")
         .eq("id", pid)
         .maybeSingle(),
       // 내 점수·참여 회차 — 확정 세션만 (/api/me와 동일 패턴)
@@ -112,11 +112,12 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    const dept = p.department as unknown as { name: string };
     return NextResponse.json({
       me: {
         nickname: p.nickname,
-        departmentName: dept.name,
+        // 부서 탭 '우리 부서' 배지 판정용. 부서명은 유일하지 않으므로(193개 중 108개 동명)
+        // 반드시 id로 비교한다 — 이름 비교는 남의 부서에 배지를 붙인다.
+        departmentId: p.department_id,
         totalScore: sessions.reduce((s, r) => s + r.score, 0),
         totalPoints,
         roundsTaken,
