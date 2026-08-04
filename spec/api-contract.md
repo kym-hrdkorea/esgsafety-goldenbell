@@ -122,18 +122,28 @@ res { isCorrect, isTimeout, correctAnswerLabel, explanation, legalRef,
 `minRoundsRequired`는 `fn_min_rounds()` 결과 → addendum C항
 ```
 {
-  me: { nickname, departmentName, totalScore, totalPoints, roundsTaken,
+  me: { nickname, departmentId, totalScore, totalPoints, roundsTaken,
         totalRank|null, departmentRank|null,
         rankEligible: boolean, minRoundsRequired,
         rankedParticipants, rankedDepartments },
   total:      [{ rank, nickname, orgUnitName, totalPoints, roundsTaken }],
   average:    [{ rank, nickname, orgUnitName, avgPoints, roundsTaken }],
-  department: [{ rank, departmentName, orgUnitName, participants, avgPoints }],
+  department: [{ rank, departmentId, departmentName, orgUnitName, participants, avgPoints }],
   computedAt,          // 최신 snapshot 적재 시각. snapshot 부재 시 null
   visibleRows          // 순위표 기본 표시 행 수 = app_config.rank_visible_rows (규칙 7)
 }
 ```
-- `me.departmentName`: 부서 탭에서 내 부서 행 배지 판정용
+- `me.departmentId`: 부서 탭 내 부서 행 배지 판정용. `department[].departmentId`와 **id로** 비교한다.
+  ★ **부서명은 판정 키로 쓰지 않는다** — 부서명은 소속 안에서만 유일하고(`UNIQUE(org_unit_id, name)`),
+  실제로 193개 부서 중 108개가 동명이다('직업능력개발부' 32곳, '기업인재혁신부' 20곳).
+  이름 비교는 남의 부서 행에 배지를 붙이고, `department_id` 기준인 '우리 부서 순위' 카드와
+  같은 화면에서 서로 다른 순위를 가리킨다.
+- `departmentId`는 `v_rank_department.department_id`(= `department.id`)다. 뷰가 이미 노출하므로
+  스키마 변경이 없다.
+- 구 스냅샷(`departmentId` 부재)에서는 클라이언트가 배지를 표시하지 않는다 — 틀린 배지 금지.
+- 부서 탭 표 헤더는 `순위` `부서` `소속` `평균 포인트`다. 동명 부서 식별을 위해 소속명을 병기한다
+  (두 토큰 모두 `design/copy.md` 승인 목록에 있다). 참여자 하한은 `참여자 3명 이상인 부서만
+  표시됩니다` 안내가 보증한다.
 
 ### `GET /api/dashboard/round/[no]`
 → `[{ rank, nickname, orgUnitName, points, score, pct }]`
