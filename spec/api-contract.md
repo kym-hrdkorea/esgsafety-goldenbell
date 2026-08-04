@@ -164,6 +164,13 @@ err  401 INVALID_CREDENTIALS, 423 LOCKED { lockedUntil }
 
 ### `POST /api/admin/auth/logout` → `204`
 
+### `GET /api/admin/rounds`
+→ `[{ roundNo, season, theme, opensAt, closesAt, isPublished, state, hasBody }]`
+- 회차 개방 상태 조회(읽기 전용). 미인증 `401 UNAUTHENTICATED`.
+- `state`는 **서버가 `roundState()`로 계산**해 내려준다. 클라이언트가 다시 판정하지 않는다(규칙 2절).
+- `hasBody`는 `prelearning_body IS NOT NULL`. 본문 원문은 보내지 않는다.
+- 개방 전환 기능은 제공하지 않는다 — 개방은 일정이 결정한다(business-rules 2절, 리뷰 A-5).
+
 ### 통계 조회 — 참가자는 닉네임으로만 표시, 사번 미노출 (addendum H항)
 ```
 GET /api/admin/stats/participation → [{ roundNo, started, finished, registered }]

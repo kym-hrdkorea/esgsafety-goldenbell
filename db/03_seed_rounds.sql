@@ -39,4 +39,20 @@ INSERT INTO quiz_round
 ON CONFLICT (round_no) DO NOTHING;
 
 -- prelearning_body(사전학습 본문)는 별도 산출물로 작성 후 UPDATE 한다.
--- is_published 는 각 회차 개방 직전에 true 로 변경한다(운영 조작).
+--
+-- is_published 운영 방식 (2026-08-04 변경 — 리뷰 A-5):
+--   이전에는 "각 회차 개방 직전에 true 로 변경"이었다. 그런데 저장소 어디에도 이 값을
+--   true 로 바꾸는 코드가 없어서, 8주 동안 매주 월 00:00 수동 SQL 7번이 전부 성공해야 했다.
+--   실패해도 참가자 화면에는 '아직 열리지 않았습니다'만 뜨고 로그도 남지 않아 조용히 지나간다.
+--
+--   → 개방은 일정(opens_at/closes_at)이 단독으로 결정하게 한다.
+--     개시 전 1회만 8회차를 일괄 true 로 올린다:
+--       UPDATE quiz_round SET is_published = true WHERE is_published = false;
+--     ★ 전제조건: prelearning_body 가 8회차 전부 채워져 있어야 한다. 비어 있으면
+--       사전학습 화면이 빈 채로 열리면서 열람 로그만 쌓여 캠페인 KPI가 오염된다.
+--       확인: SELECT count(*) FROM quiz_round WHERE prelearning_body IS NULL;  -- 0 이어야 함
+--
+--   false 로 내리는 것은 긴급 중단(문항 오류·유출) 한 가지 경우뿐이다:
+--       UPDATE quiz_round SET is_published = false WHERE round_no = N;
+--
+--   개방 상태는 관리자 화면 '회차 개방 상태'(GET /api/admin/rounds)에서 확인한다.

@@ -19,6 +19,23 @@ type Matched = {
 type Heat = { orgUnitName: string; category: string; n: number; pct: number };
 type PrelearnEffect = { roundNo: number; viewed: boolean; n: number; avgPct: number };
 type ShortRow = { itemCode: string; roundNo: number | null; nickname: string; submitted: string; answeredAt: string };
+type RoundStatus = {
+  roundNo: number; season: number; theme: string;
+  opensAt: string; closesAt: string; isPublished: boolean;
+  state: "locked" | "open" | "closed"; hasBody: boolean;
+};
+
+// 표시 전용 KST 변환. 개방 판정은 서버가 이미 state로 내려준다 (business-rules 2절)
+function kst(iso: string): string {
+  return new Intl.DateTimeFormat("ko-KR", {
+    timeZone: "Asia/Seoul", month: "2-digit", day: "2-digit",
+    hour: "2-digit", minute: "2-digit", hour12: false,
+  }).format(new Date(iso));
+}
+
+const STATE_LABEL: Record<RoundStatus["state"], string> = {
+  locked: "대기", open: "열림", closed: "종료",
+};
 
 const EXPORTS: { kind: string; label: string }[] = [
   { kind: "answers", label: "응답 원본" },
@@ -56,6 +73,7 @@ export default function AdminPage() {
   const [loginError, setLoginError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
+  const [rounds, setRounds] = useState<RoundStatus[]>([]);
   const [participation, setParticipation] = useState<Participation[]>([]);
   const [items, setItems] = useState<ItemStat[]>([]);
   const [matched, setMatched] = useState<Matched[]>([]);
@@ -66,6 +84,7 @@ export default function AdminPage() {
 
   const loadAll = useCallback(async () => {
     const paths = [
+      "/api/admin/rounds",
       "/api/admin/stats/participation",
       "/api/admin/stats/items",
       "/api/admin/stats/matched",
@@ -83,7 +102,9 @@ export default function AdminPage() {
       setAuthed(true);
       return;
     }
-    const [pa, it, ma, he, pl, sh] = await Promise.all(results.map((r) => r.json()));
+    // ★ paths 순서와 아래 구조분해 순서가 1:1로 맞아야 한다
+    const [ro, pa, it, ma, he, pl, sh] = await Promise.all(results.map((r) => r.json()));
+    setRounds(ro);
     setParticipation(pa);
     setItems(it);
     setMatched(ma);
@@ -218,6 +239,46 @@ export default function AdminPage() {
           <div className={`${NUM} text-[22px] font-bold text-gb-yellow`}>{(latest?.finished ?? 0).toLocaleString("ko-KR")}</div>
         </div>
       </div>
+
+      <Section title="회차 개방 상태">
+        {rounds.length === 0 ? (
+          <Empty />
+        ) : (
+          <div className="overflow-hidden rounded border-[3px] border-gb-border-divider">
+            <table className="w-full border-collapse">
+              <thead className="bg-gb-bg-panel">
+                <tr>
+                  <th className={TH}>회차</th>
+                  <th className={TH}>주제</th>
+                  <th className={TH}>개방(KST)</th>
+                  <th className={TH}>마감(KST)</th>
+                  <th className={TH}>상태</th>
+                  <th className={TH}>사전학습</th>
+                </tr>
+              </thead>
+              <tbody>
+                {rounds.map((r) => (
+                  <tr key={r.roundNo} className="border-t-2 border-gb-border-row">
+                    <td className={`${TD} ${NUM}`}>{r.roundNo}</td>
+                    <td className={TD}>{r.theme}</td>
+                    <td className={`${TD} ${NUM}`}>{kst(r.opensAt)}</td>
+                    <td className={`${TD} ${NUM}`}>{kst(r.closesAt)}</td>
+                    <td className={TD}>
+                      <span className={r.state === "open" ? "font-bold text-gb-yellow" : undefined}>
+                        {STATE_LABEL[r.state]}
+                      </span>
+                      {!r.isPublished && " (비공개)"}
+                    </td>
+                    <td className={TD}>
+                      {r.hasBody ? "O" : <span className="font-bold text-gb-red-text">없음</span>}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </Section>
 
       <Section title="CSV 내려받기">
         <div className="flex flex-wrap gap-2">
