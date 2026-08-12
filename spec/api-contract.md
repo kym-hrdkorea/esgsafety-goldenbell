@@ -199,6 +199,7 @@ GET /api/admin/stats/heatmap       → [{ orgUnitName, category, n, pct }]
 GET /api/admin/stats/prelearning   → [{ roundNo, viewed, n, avgPct }]
 GET /api/admin/short-unmatched     → [{ itemCode, roundNo, nickname, submitted, answeredAt }]
 ```
+- `viewed`는 `prelearning_view.viewed_at <= quiz_session.started_at`인 사전학습 열람만 뜻한다. 퀴즈 시작 후 재열람 로그는 보존하지만 열람 효과 집계에서는 미열람으로 분류한다.
 - `measureCode`/`anchorCode`/`level`은 성과분석 목적의 **관리자 전용** 데이터다. 참가자 응답 금지(규칙 2-1)는 참가자 API에 적용되는 규칙이며, `hq_admin` 인증 뒤에서는 제공한다.
 
 ### `GET /api/admin/export/[kind]`

@@ -22,7 +22,9 @@ db/
   03_seed_rounds.sql       회차 6개  ※ 확정 일정 반영
   04_seed_items.sql        문항 72개  [자동생성]
   05_views.sql             순위 5종 + 성과분석 7종 뷰
+  06_seed_prelearning.sql  사전학습 본문 6건  [자동생성]
   items.json               문항 원본 JSON (참조용)
+  prelearning.json         사전학습 원본 JSON (참조용)
 
 spec/
   functional-spec.md       기능 명세 + 만들지 않는 것
@@ -30,6 +32,7 @@ spec/
   decisions-addendum.md    확정 결정 A~M·G-1~G-3·N·O ★ B·C·D·E·F·K항은 이 문서에만 있다
   api-contract.md          API 계약 (24개 엔드포인트)
   test-scenarios.md        테스트 케이스 50여 건
+  legal-sources.md         T17 법령·수치 문항 근거
 
 design/
   1_claude-design.md       Claude Design 전달 프롬프트 (톤·가드레일 원본)
@@ -122,7 +125,7 @@ DB는 원격 Supabase를 공유하므로 별도 구축이 필요 없다. 현재 
 ### 0단계 — DB 구축 (30분)
 Supabase 프로젝트 생성 후 SQL Editor에서 순서대로 실행.
 ```
-01_schema.sql → 02_seed_org.sql → 03_seed_rounds.sql → 04_seed_items.sql → 05_views.sql
+01_schema.sql → 02_seed_org.sql → 03_seed_rounds.sql → 04_seed_items.sql → 05_views.sql → 06_seed_prelearning.sql
 ```
 `03_seed_rounds.sql`의 `opens_at`/`closes_at`은 **확정 일정**이다(2026-08-17 개시, 6회차 09/25 마감).
 실DB와 항상 정합해야 하며, 일정이 바뀌면 시드 재실행이 아니라 6행 절대값 UPDATE로 조정하고
@@ -157,10 +160,10 @@ T00부터 카드 단위로, 하나 끝날 때마다 확인.
 동시 100 VU, 오류율 0%, p95 < 500ms 확인 후 개시.
 
 ## 개시 전 반드시 확인
-- [ ] `03_seed_rounds.sql` 실제 일정 반영, `is_published` 운영 전환 절차 확정
-- [ ] 사전학습 본문 6건 작성 후 `quiz_round.prelearning_body` UPDATE
+- [x] `03_seed_rounds.sql` 실제 일정 반영, `is_published` 운영 전환 절차 확정
+- [x] 사전학습 본문 6건 작성 후 `06_seed_prelearning.sql`로 `quiz_round.prelearning_body` UPDATE
 - [ ] A2 앵커 8문항(안전신문고 관련)을 실제 신고 화면·절차와 대조 검수
-- [ ] 법령 시점 재확인: 2-04, 2-08, 4-09, 6-03, 6-07, 6-11
+- [x] 법령 시점 재확인: 2-04, 2-08, 4-09, 6-03, 6-07, 6-11
 - [ ] 파일럿 응시 5~10명, 회차 평균 정답률 70~75% 구간 확인
 - [ ] 관리자 계정 시딩 후 `ADMIN_INIT_PASSWORD` 환경변수 삭제
 - [ ] Vercel Cron 2건 등록 (`refresh-rankings`, `expire-sessions`)

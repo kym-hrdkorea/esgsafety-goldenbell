@@ -222,7 +222,7 @@ GROUP BY i.id, i.item_code, i.round_no, i.level, i.item_type,
          i.category, i.anchor_code, i.measure_code
 ORDER BY i.round_no, i.item_code;
 
--- ⑦ 앵커 성장곡선 (A1·A2 회차별 정답률 → 8개 측정점)
+-- ⑦ 앵커 성장곡선 (A1·A2 회차별 정답률 → 12개 측정점)
 CREATE OR REPLACE VIEW v_anchor_trend AS
 SELECT i.round_no, i.anchor_code,
        COUNT(*) AS n,
@@ -295,15 +295,19 @@ WHERE si.answered_at IS NOT NULL OR si.is_timeout
 GROUP BY u.name, COALESCE(i.category, 'MEASURE')
 ORDER BY u.name, category;
 
--- ⑪ 사전학습 열람 효과 (열람자 vs 미열람자 정답률)
+-- ⑪ 사전학습 열람 효과 (퀴즈 시작 전 열람자 vs 미열람자 정답률)
 CREATE OR REPLACE VIEW v_prelearning_effect AS
 SELECT r.round_no,
        (pv.participant_id IS NOT NULL) AS viewed,
        COUNT(*) AS n,
        ROUND(AVG(r.pct), 1) AS avg_pct
 FROM v_round_score r
+JOIN quiz_session s
+       ON s.participant_id = r.participant_id AND s.round_no = r.round_no
 LEFT JOIN prelearning_view pv
-       ON pv.participant_id = r.participant_id AND pv.round_no = r.round_no
+       ON pv.participant_id = r.participant_id
+      AND pv.round_no = r.round_no
+      AND pv.viewed_at <= s.started_at
 GROUP BY r.round_no, (pv.participant_id IS NOT NULL)
 ORDER BY r.round_no, viewed;
 

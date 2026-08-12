@@ -32,7 +32,8 @@ INSERT INTO quiz_round
      '안전 법령 기초와 6주 핵심 요약', false)
 ON CONFLICT (round_no) DO NOTHING;
 
--- prelearning_body(사전학습 본문)는 별도 산출물로 작성 후 UPDATE 한다.
+-- prelearning_body(사전학습 본문)는 db/prelearning.json에서 관리하고
+-- 06_seed_prelearning.sql로 트랜잭션 UPDATE 한다.
 --
 -- is_published 운영 방식 (2026-08-04 변경 — 리뷰 A-5):
 --   이전에는 "각 회차 개방 직전에 true 로 변경"이었다. 그런데 저장소 어디에도 이 값을
@@ -42,7 +43,7 @@ ON CONFLICT (round_no) DO NOTHING;
 --   → 개방은 일정(opens_at/closes_at)이 단독으로 결정하게 한다.
 --     개시 전 1회만 6회차를 일괄 true 로 올린다:
 --       UPDATE quiz_round SET is_published = true WHERE is_published = false;
---     ★ 전제조건: prelearning_body 가 6회차 전부 채워져 있어야 한다. 비어 있으면
+--     ★ 전제조건: 06_seed_prelearning.sql 적용 후 prelearning_body 가 6회차 전부 채워져 있어야 한다. 비어 있으면
 --       사전학습 화면이 빈 채로 열리면서 열람 로그만 쌓여 캠페인 KPI가 오염된다.
 --       확인: SELECT count(*) FROM quiz_round WHERE prelearning_body IS NULL;  -- 0 이어야 함
 --

@@ -5,7 +5,7 @@ import { apiError } from "@/lib/quiz";
 
 export const dynamic = "force-dynamic";
 
-// 사전학습 열람 효과 (v_prelearning_effect): 회차별 열람자 vs 미열람자 평균 정답률
+// 사전학습 열람 효과 (v_prelearning_effect): 퀴즈 시작 전 열람자 vs 미열람자 평균 정답률
 export async function GET(req: NextRequest) {
   if (!getAdminId(req)) return apiError(401, "UNAUTHENTICATED");
 
