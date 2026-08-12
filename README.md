@@ -2,6 +2,12 @@
 
 2개월 한시 운영 웹앱. Next.js 15 + Supabase + Vercel.
 
+## 현재 이어받기 기준
+
+6회차 전환과 이후 순차 개발은 [`tasks/continuation-plan.md`](tasks/continuation-plan.md)를 단일 기준으로 사용한다.
+운영 목표는 2026-08-17~2026-09-25, 6회차, 회차당 12문항, 총 72문항이다.
+사용자 설정이 필요한 단계에서는 계획 파일의 초보자용 지침을 먼저 수행하고, 실제 비밀값은 채팅이나 GitHub에 공유하지 않는다.
+
 ## 파일 구성
 
 ```
@@ -37,6 +43,7 @@ design/
 
 tasks/
   tasks.md                 작업 카드 T00~T13 (수직 슬라이스)
+  continuation-plan.md     T14~T24 6회차 전환·연속 개발 단일 계획
   ux-findings.md           참가자 화면 UI/UX 감사 (A·B절 완료, C절 미해결)
   code-review-findings.md  전체 코드 리뷰 66건 (2026-08-03)
 prompts/
