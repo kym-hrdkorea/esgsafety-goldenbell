@@ -7,6 +7,7 @@
     "build": "next build",
     "start": "next start",
     "test": "node --test lib/grading.test.ts",
+    "test:items": "node db/validate-items.mjs",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

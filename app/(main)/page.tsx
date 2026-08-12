@@ -302,7 +302,7 @@ export default function HomePage() {
                 {r.roundNo}회차
               </span>
               {/* 우측 문안이 118px로 가장 길어 테마 몫이 128px뿐이다. 다른 행처럼 잘라내면
-                  테마의 절반이 사라지므로 여기만 2줄을 허용한다 — 8개 테마 전부 어절
+                  테마의 절반이 사라지므로 여기만 2줄을 허용한다 — 6개 테마 전부 어절
                   단위로 2줄에 들어간다. 접히던 게 아니라 접기로 한 것이다 (ux B-3). */}
               <span className="line-clamp-2 min-w-0 flex-1 text-[15px] font-bold text-gb-text-dim">
                 {r.theme}

@@ -77,7 +77,7 @@ DB에는 화면 위치(1)가 아니라 **원본 index(2)** 를 저장해야 한�
 
 > 전제: P1 오리엔테이션과 13건 결정(addendum A~M·G-1~G-3) 완료.
 > Supabase MCP는 `.mcp.json`(호스티드 HTTP, project_ref=etqmarnbscjkrkthpful)로 연결.
-> `03_seed_rounds.sql`은 2026-08-10(월) 시작 기준으로 이미 갱신됨.
+> `03_seed_rounds.sql`은 2026-08-17(월) 시작·6회차 기준으로 갱신됨.
 
 ```
 P2 DB 구축을 진행합니다. 이 작업에 한해 DDL 실행을 허가합니다(CLAUDE.md 규칙 9-1의 "최초 1회").
@@ -88,19 +88,19 @@ Supabase MCP(project_ref=etqmarnbscjkrkthpful) 연결을 먼저 확인하고,
 연결되어 있으면 db/ 폴더 SQL을 아래 순서로 실행하세요.
 연결이 안 되어 있으면 실행하지 말고 멈춰서 알려주세요.
 
-1. db/01_schema.sql        (G-1 반영본: admin_user 잠금 컬럼, app_config 12건)
+1. db/01_schema.sql        (G-1 반영본: admin_user 잠금 컬럼, app_config 14건)
 2. db/02_seed_org.sql
    → 실행 직후 시퀀스 보정(명시 id 삽입으로 serial이 전진하지 않음):
      SELECT setval(pg_get_serial_sequence('org_unit','id'),   (SELECT max(id) FROM org_unit));
      SELECT setval(pg_get_serial_sequence('department','id'), (SELECT max(id) FROM department));
-3. db/03_seed_rounds.sql   (2026-08-10 월요일 시작 반영본. is_published 전부 false 유지.
+3. db/03_seed_rounds.sql   (2026-08-17 월요일 시작 반영본. 6회차·is_published 전부 false 유지.
                             시작일이 바뀌면 재적재가 아니라 UPDATE(DML)로 조정)
 4. db/04_seed_items.sql
 5. db/05_views.sql         (L항 수정본: 사분위 참가자 총점 기준 + 미서빙 필터)
 
 전체 실행 후 아래를 쿼리로 검증해 표로 보고하세요.
-- org_unit 50 / department 193 / quiz_round 8 / quiz_item 96 / app_config 12
-- quiz_item 유형 분포 MC4 60 / OX 32 / ORDER 3 / SHORT 1
+- org_unit 50 / department 193 / quiz_round 6 / quiz_item 72 / app_config 14
+- quiz_item 유형 분포 MC4 55 / OX 14 / ORDER 2 / SHORT 1
 - answer 자료형: OX=boolean, MC4=number(0~3), ORDER=array, SHORT=array
   + MC4 범위 이탈 0건, choices 유무가 유형과 일치(MC4·ORDER만 NOT NULL)
 - 뷰 13개 생성(기초 v_round_score 포함. 번호 뷰 ①~⑫ + 기초 1)

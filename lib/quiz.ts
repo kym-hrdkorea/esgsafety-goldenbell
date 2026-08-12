@@ -24,7 +24,7 @@ export function apiError(
 
 export function parseRoundNo(param: string): number | null {
   const no = Number(param);
-  return Number.isInteger(no) && no >= 1 && no <= 8 ? no : null;
+  return Number.isInteger(no) && no >= 1 && no <= 6 ? no : null;
 }
 
 export type Round = {

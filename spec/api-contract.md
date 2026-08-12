@@ -61,6 +61,8 @@ err  401 VERIFICATION_FAILED, 429 TOO_MANY_REQUESTS, 400 VALIDATION
 
 ## 회차
 
+- 회차 번호의 유효 범위는 `1..6`이다. `7`, `8` 및 그 밖의 값은 `404 NOT_FOUND`로 처리한다.
+
 ### `GET /api/rounds`
 ```
 [{ roundNo, season, theme, opensAt, closesAt,

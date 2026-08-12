@@ -96,7 +96,7 @@ CREATE INDEX IF NOT EXISTS idx_participant_unit ON participant(org_unit_id);
 -- 3. 회차
 -- ---------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS quiz_round (
-  round_no          int  PRIMARY KEY CHECK (round_no BETWEEN 1 AND 8),
+  round_no          int  PRIMARY KEY CHECK (round_no BETWEEN 1 AND 6),
   season            int  NOT NULL CHECK (season IN (1, 2)),
   theme             text NOT NULL,
   opens_at          timestamptz NOT NULL,   -- 월요일 00:00 KST

@@ -235,7 +235,7 @@ GROUP BY i.round_no, i.anchor_code
 ORDER BY i.anchor_code, i.round_no;
 
 -- ⑧ 동일인 대조 사전·사후 (★ 캠페인 핵심 성과지표)
---    사전 M01~M12(1·2회차) / 사후 M01P~M12P(7·8회차) 모두 응시한 사람만
+--    사전 M01~M12(1·2회차) / 사후 M01P~M12P(5·6회차) 모두 응시한 사람만
 CREATE OR REPLACE VIEW v_matched_pre_post AS
 WITH scored AS (
   SELECT s.participant_id,

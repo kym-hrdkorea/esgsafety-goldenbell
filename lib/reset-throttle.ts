@@ -24,7 +24,7 @@ function envInt(name: string, fallback: number): number {
 // 정상 사용자가 서로를 막는다. 의도적으로 느슨하게 둔다.
 const PER_IP_LIMIT = envInt("RESET_PIN_PER_IP_HOURLY", 20);
 
-// 인스턴스 전역 40/시간 — 실제 제동장치. 1,800명 8주 기준 정상 수요는
+// 인스턴스 전역 40/시간 — 실제 제동장치. 1,800명 6주 기준 정상 수요는
 // 하루 1~3건이라 약 300배 여유다.
 const GLOBAL_LIMIT = envInt("RESET_PIN_GLOBAL_HOURLY", 40);
 

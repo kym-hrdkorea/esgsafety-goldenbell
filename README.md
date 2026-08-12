@@ -17,10 +17,10 @@ AGENTS.md                  Codex 검증 역할 정의   ★ 리포 루트에 배
 decisions.md               확정 의사결정 24건 + 정정 이력
 
 db/
-  01_schema.sql            스키마 DDL (8개 테이블)
+  01_schema.sql            스키마 DDL (12개 테이블)
   02_seed_org.sql          소속 50개 / 부서 193개  [자동생성]
-  03_seed_rounds.sql       회차 8개  ※ 날짜 수정 필요
-  04_seed_items.sql        문항 96개  [자동생성]
+  03_seed_rounds.sql       회차 6개  ※ 확정 일정 반영
+  04_seed_items.sql        문항 72개  [자동생성]
   05_views.sql             순위 5종 + 성과분석 7종 뷰
   items.json               문항 원본 JSON (참조용)
 
@@ -124,17 +124,17 @@ Supabase 프로젝트 생성 후 SQL Editor에서 순서대로 실행.
 ```
 01_schema.sql → 02_seed_org.sql → 03_seed_rounds.sql → 04_seed_items.sql → 05_views.sql
 ```
-`03_seed_rounds.sql`의 `opens_at`/`closes_at`은 **확정 일정**이다(2026-08-17 개시, 8회차 10/09 마감).
-실DB와 항상 정합해야 하며, 일정이 바뀌면 시드 재실행이 아니라 8행 절대값 UPDATE로 조정하고
+`03_seed_rounds.sql`의 `opens_at`/`closes_at`은 **확정 일정**이다(2026-08-17 개시, 6회차 09/25 마감).
+실DB와 항상 정합해야 하며, 일정이 바뀌면 시드 재실행이 아니라 6행 절대값 UPDATE로 조정하고
 이 파일도 같은 값으로 함께 고친다.
 
 확인 쿼리
 ```sql
 SELECT count(*) FROM org_unit;    -- 50
 SELECT count(*) FROM department;  -- 193
-SELECT count(*) FROM quiz_item;   -- 96
+SELECT count(*) FROM quiz_item;   -- 72
 SELECT item_type, count(*) FROM quiz_item GROUP BY 1;
--- MC4 60 / OX 32 / ORDER 3 / SHORT 1
+-- MC4 55 / OX 14 / ORDER 2 / SHORT 1
 ```
 
 ### 1단계 — 설계 검증 (Codex, 1시간)
@@ -158,9 +158,9 @@ T00부터 카드 단위로, 하나 끝날 때마다 확인.
 
 ## 개시 전 반드시 확인
 - [ ] `03_seed_rounds.sql` 실제 일정 반영, `is_published` 운영 전환 절차 확정
-- [ ] 사전학습 본문 8건 작성 후 `quiz_round.prelearning_body` UPDATE
+- [ ] 사전학습 본문 6건 작성 후 `quiz_round.prelearning_body` UPDATE
 - [ ] A2 앵커 8문항(안전신문고 관련)을 실제 신고 화면·절차와 대조 검수
-- [ ] 법령 시점 재확인: 2-04, 2-08, 6-05, 8-07, 8-11, 8-03
+- [ ] 법령 시점 재확인: 2-04, 2-08, 4-09, 6-03, 6-07, 6-11
 - [ ] 파일럿 응시 5~10명, 회차 평균 정답률 70~75% 구간 확인
 - [ ] 관리자 계정 시딩 후 `ADMIN_INIT_PASSWORD` 환경변수 삭제
 - [ ] Vercel Cron 2건 등록 (`refresh-rankings`, `expire-sessions`)
@@ -170,5 +170,5 @@ T00부터 카드 단위로, 하나 끝날 때마다 확인.
 | 항목 | 필요 시점 |
 |---|---|
 | 캠페인 시작일 확정 | DB 구축 시 |
-| 사전학습 자료 8건 본문 | 1회차 개방 전 |
+| 사전학습 자료 6건 본문 | 1회차 개방 전 |
 | 포상 인원·금액 확정 | 계획서 결재 시 |
