@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/lib/db";
 import { getConfigValue } from "@/lib/config";
+import { fetchAll } from "@/lib/admin";
 import { apiError, expireSession, type Session } from "@/lib/quiz";
 
 export const dynamic = "force-dynamic";
@@ -19,19 +20,23 @@ async function handle(req: NextRequest) {
     const timeoutMin = await getConfigValue("session_timeout_min");
     const cutoffIso = new Date(Date.now() - timeoutMin * 60_000).toISOString();
 
-    const { data: stale, error } = await getDb()
-      .from("quiz_session")
-      .select(
-        "id, participant_id, round_no, status, current_index, total_items, score, last_activity_at"
-      )
-      .eq("status", "in_progress")
-      .lt("last_activity_at", cutoffIso);
-    if (error) throw new Error(error.message);
+    // PostgREST 기본 1,000행 제한을 넘을 수 있으므로 페이지 단위로 전량 조회한다.
+    const stale = await fetchAll((from, to) =>
+      getDb()
+        .from("quiz_session")
+        .select(
+          "id, participant_id, round_no, status, current_index, total_items, score, last_activity_at"
+        )
+        .eq("status", "in_progress")
+        .lt("last_activity_at", cutoffIso)
+        .order("last_activity_at")
+        .range(from, to)
+    );
 
-    for (const s of stale ?? []) {
+    for (const s of stale) {
       await expireSession(s as Session);
     }
-    return NextResponse.json({ expired: stale?.length ?? 0 });
+    return NextResponse.json({ expired: stale.length });
   } catch (err) {
     console.error(
       "[cron/expire-sessions]",

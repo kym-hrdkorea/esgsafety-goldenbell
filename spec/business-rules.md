@@ -108,6 +108,13 @@ now() - last_activity_at > 30분  →  session.status = 'expired'
 - 12문항 모두 처리되면 `status='completed'`, `completed_at=now()`, `score` 확정.
 - 이후 결과 화면만 접근 가능.
 
+### 3.6 세션 원자성·재조정 (T19)
+- 신규 세션은 `fn_create_quiz_session`이 세션 1행과 `quiz_session_item` 12행을 같은 DB 트랜잭션에서 생성한다. 문항 생성이 실패하면 세션도 남지 않는다.
+- `UNIQUE(participant_id, round_no)` 경합에서는 먼저 커밋된 세션 하나만 보존하고, 나머지 요청은 기존 세션 재개로 처리한다.
+- 답변·다음·결과 재시도는 `fn_reconcile_quiz_session`을 사용한다. 이 함수는 세션 행을 `FOR UPDATE`로 잠그고 확정 문항의 `is_correct=true` 수로 score를 다시 계산한다.
+- 마지막 문항의 답변 저장과 세션 완료 갱신이 분리되어 실패해도 `/next` 또는 결과 조회가 재조정해 완료 상태와 점수를 복구한다.
+- 만료는 `fn_expire_quiz_session`이 세션 잠금, 미응답 timeout 확정, score 재계산, `expired` 전이를 한 번에 수행한다. Cron은 1,000행 단위 페이지를 전부 순회한다.
+
 ## 4. 채점 규칙 (`lib/grading.ts` — 단위테스트 필수)
 
 | 유형 | 제출 형식 | 판정 |

@@ -18,6 +18,7 @@ import {
   loadSession,
   parseRoundNo,
   MSG,
+  reconcileSession,
 } from "@/lib/quiz";
 
 export const dynamic = "force-dynamic";
@@ -129,11 +130,7 @@ export async function POST(
       // (finalize 실패 후 재제출) 여기서 재시도한다 (addendum D항 보강)
       let score = session.score;
       if (session.status === "in_progress") {
-        score = await finalizeSession(
-          session.id,
-          isLast,
-          new Date().toISOString()
-        );
+        score = (await reconcileSession(session.id, isLast)).score;
       }
       return result(
         si.is_correct === true,
@@ -170,15 +167,19 @@ export async function POST(
           .select("is_correct, is_timeout, submitted, elapsed_ms")
           .eq("id", si.id)
           .single();
+        const repaired =
+          session.status === "in_progress"
+            ? await reconcileSession(session.id, isLast)
+            : session;
         return result(
           cur?.is_correct === true,
           cur?.is_timeout ?? false,
-          session.score,
+          repaired.score,
           cur?.elapsed_ms ?? elapsedMs,
           cur?.submitted ?? null
         );
       }
-      const score = await finalizeSession(session.id, isLast, nowIso);
+      const score = (await reconcileSession(session.id, isLast)).score;
       return result(false, true, score, elapsedMs, null);
     }
 
@@ -260,52 +261,23 @@ export async function POST(
         .select("is_correct, is_timeout, submitted, elapsed_ms")
         .eq("id", si.id)
         .single();
+      const repaired =
+        session.status === "in_progress"
+          ? await reconcileSession(session.id, isLast)
+          : session;
       return result(
         cur?.is_correct === true,
         cur?.is_timeout ?? false,
-        session.score,
+        repaired.score,
         cur?.elapsed_ms ?? elapsedMs,
         cur?.submitted ?? null
       );
     }
 
-    const newScore = await finalizeSession(session.id, isLast, nowIso);
+    const newScore = (await reconcileSession(session.id, isLast)).score;
     return result(isCorrect, false, newScore, elapsedMs, store);
   } catch (err) {
     console.error("[rounds/answer]", err instanceof Error ? err.message : err);
     return apiError(500, "INTERNAL");
   }
-}
-
-// 12번째 문항 제출 시점에 즉시 완료 처리한다. [결과 보기] 클릭을 기다리지 않는다 (addendum D항).
-// 점수는 메모리 증분이 아니라 확정된 문항(is_correct)의 DB 집계로 계산한다 —
-// 문항 확정과 세션 갱신 사이의 부분 실패가 있어도 다음 호출에서 자가 복구된다.
-async function finalizeSession(
-  sessionId: string,
-  isLast: boolean,
-  nowIso: string
-): Promise<number> {
-  const db = getDb();
-  const { count, error: cntErr } = await db
-    .from("quiz_session_item")
-    .select("id", { count: "exact", head: true })
-    .eq("session_id", sessionId)
-    .eq("is_correct", true);
-  if (cntErr) throw new Error(cntErr.message);
-  const score = count ?? 0;
-
-  const patch: Record<string, unknown> = {
-    score,
-    last_activity_at: nowIso,
-  };
-  if (isLast) {
-    patch.status = "completed";
-    patch.completed_at = nowIso;
-  }
-  const { error } = await db
-    .from("quiz_session")
-    .update(patch)
-    .eq("id", sessionId);
-  if (error) throw new Error(error.message);
-  return score;
 }

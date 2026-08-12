@@ -3,7 +3,13 @@ import { getDb } from "@/lib/db";
 import { getConfigValue } from "@/lib/config";
 import { getParticipantId } from "@/lib/session";
 import { answerLabel, calcItemPoints, type ItemType } from "@/lib/grading";
-import { apiError, loadSession, parseRoundNo } from "@/lib/quiz";
+import {
+  apiError,
+  expireIfIdle,
+  loadSession,
+  parseRoundNo,
+  reconcileSession,
+} from "@/lib/quiz";
 
 export const dynamic = "force-dynamic";
 
@@ -28,8 +34,16 @@ export async function GET(
   if (no === null) return apiError(404, "NOT_FOUND");
 
   try {
-    const session = await loadSession(pid, no);
+    let session = await loadSession(pid, no);
     if (!session) return apiError(404, "NOT_FOUND");
+    // 결과 조회 자체가 30분 만료의 lazy 진입점이다. 만료 직후 응시 화면으로
+    // 되돌아갔다가 다시 결과로 돌아오는 리다이렉트 교착을 막는다.
+    session = await expireIfIdle(session);
+    if (session.status === "completed" || session.status === "expired") {
+      // 마지막 답변의 문항 확정만 남고 세션 score 갱신이 실패한 경우에도
+      // 결과 조회 자체가 저장된 문항 기준 점수를 복구한다.
+      session = await reconcileSession(session.id, false);
+    }
     if (session.status === "in_progress") {
       // 결과는 완료 후에만 접근 가능 (business-rules 3.5). 클라이언트는 응시 화면으로 되돌린다.
       return apiError(409, "IN_PROGRESS", undefined, { status: session.status });

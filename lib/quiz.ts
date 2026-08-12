@@ -68,6 +68,17 @@ export type Session = {
   last_activity_at: string;
 };
 
+// Supabase RPC의 RETURNS TABLE 결과는 배열로 오고, 일부 로컬 mock은 단일
+// 객체로 반환할 수 있다. 두 형태를 한 곳에서 정규화해 재시도 경로가 같은
+// 세션 행을 사용하게 한다.
+export function sessionFromRpc(data: unknown): Session {
+  const row = Array.isArray(data) ? data[0] : data;
+  if (!row || typeof row !== "object") {
+    throw new Error("세션 RPC가 세션 행을 반환하지 않았습니다");
+  }
+  return row as Session;
+}
+
 export async function loadSession(
   participantId: string,
   roundNo: number
@@ -95,43 +106,29 @@ export async function expireIfIdle(session: Session): Promise<Session> {
   return expireSession(session);
 }
 
-// 만료 전이: 문항 확정 → 점수 재집계 → 세션 claim 순서.
-// 각 단계가 멱등이라 중간 실패는 다음 접근의 재실행으로 자가 복구된다.
+// 답변·다음 버튼 재시도용 점수/완료 상태 재조정.
+// DB 함수가 세션 행을 FOR UPDATE로 잠근 뒤 문항을 집계하므로, 동시에
+// 여러 답변이 확정되어도 오래된 score가 나중에 덮어쓰이지 않는다.
+export async function reconcileSession(
+  sessionId: string,
+  complete: boolean
+): Promise<Session> {
+  const { data, error } = await getDb().rpc("fn_reconcile_quiz_session", {
+    p_session_id: sessionId,
+    p_complete: complete,
+  });
+  if (error) throw new Error(error.message);
+  return sessionFromRpc(data);
+}
+
+// 만료 전이: DB 함수 안에서 세션 잠금 → 미응답 문항 확정 → 점수 재집계
+// → expired 전이를 한 번에 처리한다. 이미 만료·완료된 호출도 멱등이다.
 export async function expireSession(session: Session): Promise<Session> {
-  const db = getDb();
-
-  // 1) 미응답 문항 전부 시간초과 확정 (F1). 진행 중 답변과의 경합은
-  //    answered_at IS NULL 가드로 한쪽만 이긴다.
-  const { error: itemErr } = await db
-    .from("quiz_session_item")
-    .update({ is_timeout: true, is_correct: false, submitted: null })
-    .eq("session_id", session.id)
-    .is("answered_at", null)
-    .eq("is_timeout", false);
-  if (itemErr) throw new Error(itemErr.message);
-
-  // 2) 점수는 확정 문항의 DB 집계로 재계산 (answer 경로의 finalize와 동일 방식)
-  const { count, error: cntErr } = await db
-    .from("quiz_session_item")
-    .select("id", { count: "exact", head: true })
-    .eq("session_id", session.id)
-    .eq("is_correct", true);
-  if (cntErr) throw new Error(cntErr.message);
-  const score = count ?? 0;
-
-  // 3) 세션 전이. expired에도 completed_at을 "종료 시각"으로 기록한다 (addendum E항)
-  const { error: sesErr } = await db
-    .from("quiz_session")
-    .update({
-      status: "expired",
-      completed_at: new Date().toISOString(),
-      score,
-    })
-    .eq("id", session.id)
-    .eq("status", "in_progress");
-  if (sesErr) throw new Error(sesErr.message);
-
-  return { ...session, status: "expired", score };
+  const { data, error } = await getDb().rpc("fn_expire_quiz_session", {
+    p_session_id: session.id,
+  });
+  if (error) throw new Error(error.message);
+  return sessionFromRpc(data);
 }
 
 // 해설 단계 응답의 유형별 리캡 필드. 채점 확정 후에만 호출된다 (규칙 2).

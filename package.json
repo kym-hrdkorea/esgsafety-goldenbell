@@ -10,6 +10,7 @@
     "test:items": "node db/validate-items.mjs",
     "test:prelearning": "node db/validate-prelearning.mjs",
     "test:outcomes": "node db/validate-outcomes.mjs",
+    "test:sessions": "node db/validate-session-functions.mjs",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

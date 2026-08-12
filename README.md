@@ -23,11 +23,13 @@ db/
   04_seed_items.sql        문항 72개  [자동생성]
   05_views.sql             순위·점수·성과분석 뷰
   06_seed_prelearning.sql  사전학습 본문 6건  [자동생성]
+  07_session_functions.sql 세션 원자 생성·점수 복구·만료 함수 (T19, T21 적용)
   items.json               문항 원본 JSON (참조용)
   prelearning.json         사전학습 원본 JSON (참조용)
   validate-items.mjs       문항은행 자동검증
   validate-prelearning.mjs 사전학습 자동검증
   validate-outcomes.mjs    성과측정 계약·산식 자동검증
+  validate-session-functions.mjs 세션 원자성·복구·만료 자동검증
 
 spec/
   functional-spec.md       기능 명세 + 만들지 않는 것
@@ -129,8 +131,9 @@ T21 전에는 `db/*.sql`을 임의로 실행하지 않는다(`CLAUDE.md` 규칙 
 ### 0단계 — DB 구축 (30분)
 Supabase 프로젝트 생성 후 SQL Editor에서 순서대로 실행.
 ```
-01_schema.sql → 02_seed_org.sql → 03_seed_rounds.sql → 04_seed_items.sql → 05_views.sql → 06_seed_prelearning.sql
+01_schema.sql → 02_seed_org.sql → 03_seed_rounds.sql → 04_seed_items.sql → 05_views.sql → 06_seed_prelearning.sql → 07_session_functions.sql
 ```
+`07_session_functions.sql`은 T19 코드가 사용하는 서버 전용 RPC다. T21의 백업·행 수 확인과 별도 승인 전에는 Supabase에서 실행하지 않는다.
 `03_seed_rounds.sql`의 `opens_at`/`closes_at`은 **확정 일정**이다(2026-08-17 개시, 6회차 09/25 마감).
 실DB와 항상 정합해야 하며, 일정이 바뀌면 시드 재실행이 아니라 6행 절대값 UPDATE로 조정하고
 이 파일도 같은 값으로 함께 고친다.
@@ -171,6 +174,7 @@ T00부터 카드 단위로, 하나 끝날 때마다 확인.
 node db/validate-items.mjs
 node db/validate-prelearning.mjs
 node db/validate-outcomes.mjs
+node db/validate-session-functions.mjs
 ```
 
 ## 개시 전 반드시 확인

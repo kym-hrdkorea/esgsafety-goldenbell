@@ -11,6 +11,7 @@ import {
   parseRoundNo,
   roundState,
   MSG,
+  sessionFromRpc,
   type Session,
 } from "@/lib/quiz";
 
@@ -42,15 +43,10 @@ export async function POST(
     const round = await loadRound(no);
     if (!round) return apiError(404, "NOT_FOUND");
 
-    // 1인 1회차 1회 — 기존 세션이 있으면 새로 만들지 않는다 (C1·C2).
-    // ★ 회차 상태 검사보다 먼저 한다: 진행 중 세션의 재개는 회차 마감과 무관하다
-    //   (test-scenarios B4 "시작 후 마감 시각은 세션 진행에 영향 없음").
-    //   item/answer/next 도 같은 이유로 회차 상태를 검사하지 않는다 —
-    //   개방 게이트는 '신규 생성'에만 건다. 순서를 되돌리면 금요일 자정을 넘긴
-    //   응시자가 자기 세션에 접근하지 못하고, 복습 화면과 무한 리다이렉트에 빠진다.
+    // 기존 세션 조회를 회차 상태보다 먼저 한다. 금요일 마감 직전에
+    // 시작한 세션은 마감 후에도 이어서 진행할 수 있어야 한다.
     let existing = await loadSession(pid, no);
     if (existing) {
-      // 30분 방치 세션은 재개 대신 만료 확정 → 아래 409로 결과 화면 유도 (F2, K항)
       existing = await expireIfIdle(existing);
       if (existing.status === "in_progress") {
         return sessionPayload(existing, round.theme);
@@ -60,7 +56,7 @@ export async function POST(
       });
     }
 
-    // 신규 생성만 개방 상태를 요구한다 (B1·B2·B3)
+    // 신규 생성만 개방 상태를 요구한다.
     const state = roundState(round);
     if (state !== "open") {
       return apiError(
@@ -72,7 +68,7 @@ export async function POST(
 
     const db = getDb();
 
-    // measure_code/anchor_code/level은 조회 자체를 하지 않는다 (규칙 2-1)
+    // measure_code/anchor_code/level은 조회 자체를 하지 않는다 (규칙 2-1).
     const { data: items, error: itemsErr } = await db
       .from("quiz_item")
       .select("id, item_type, choices")
@@ -87,30 +83,8 @@ export async function POST(
       );
     }
 
-    const { data: created, error: insErr } = await db
-      .from("quiz_session")
-      .insert({ participant_id: pid, round_no: no, total_items: items.length })
-      .select(
-        "id, participant_id, round_no, status, current_index, total_items, score, last_activity_at"
-      )
-      .single();
-
-    if (insErr) {
-      // 동시 생성 경합 (J2): UNIQUE 위반이면 기존 세션으로 재개
-      if (insErr.code === "23505") {
-        const raced = await loadSession(pid, no);
-        if (raced?.status === "in_progress") {
-          return sessionPayload(raced, round.theme);
-        }
-        return apiError(409, "ALREADY_COMPLETED", MSG.alreadyCompleted, {
-          status: raced?.status,
-        });
-      }
-      throw new Error(insErr.message);
-    }
-    const session = created as Session;
-
-    // 문항 순서 + 선택지 순서(MC4·ORDER만) 셔플을 이 시점 1회만 수행해 저장 (규칙 4, C3·C4)
+    // 문항 순서와 선택지 순서를 먼저 확정한다. 두 값은 RPC의 JSONB로
+    // 함께 전달되어 세션 1행·문항 12행과 같은 트랜잭션에서 저장된다.
     const itemOrder = shuffledIndices(items.length, randomSeed());
     const rows = itemOrder.map((itemIdx, seq) => {
       const item = items[itemIdx];
@@ -120,7 +94,6 @@ export async function POST(
         ? item.choices.length
         : 0;
       return {
-        session_id: session.id,
         item_id: item.id,
         seq,
         choice_order: needsChoiceOrder
@@ -129,14 +102,35 @@ export async function POST(
       };
     });
 
-    const { error: rowsErr } = await db.from("quiz_session_item").insert(rows);
-    if (rowsErr) {
-      // 12행 생성 실패 시 세션을 남기지 않는다 (재시도 가능하도록 보상 삭제)
-      await db.from("quiz_session").delete().eq("id", session.id);
-      throw new Error(rowsErr.message);
+    const { data: created, error: createErr } = await db.rpc(
+      "fn_create_quiz_session",
+      {
+        p_participant_id: pid,
+        p_round_no: no,
+        p_items: rows,
+      }
+    );
+
+    if (createErr) {
+      // 동시 생성 경합: UNIQUE 위반으로 함수 호출이 대기 후 실패하면
+      // 이미 커밋된 기존 세션을 다시 읽어 재개한다.
+      if (createErr.code === "23505") {
+        const raced = await loadSession(pid, no);
+        if (raced) {
+          const current = await expireIfIdle(raced);
+          if (current.status === "in_progress") {
+            return sessionPayload(current, round.theme);
+          }
+          return apiError(409, "ALREADY_COMPLETED", MSG.alreadyCompleted, {
+            status: current.status,
+          });
+        }
+        throw new Error("동시 세션 생성 경합 후 기존 세션을 찾지 못했습니다");
+      }
+      throw new Error(createErr.message);
     }
 
-    return sessionPayload(session, round.theme);
+    return sessionPayload(sessionFromRpc(created), round.theme);
   } catch (err) {
     console.error("[rounds/session]", err instanceof Error ? err.message : err);
     return apiError(500, "INTERNAL");

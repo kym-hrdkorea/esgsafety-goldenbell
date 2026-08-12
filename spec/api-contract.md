@@ -84,6 +84,7 @@ res 200 { sessionId, totalItems, currentIndex, status }
 err 403 ROUND_NOT_OPEN, 409 ALREADY_COMPLETED
 ```
 - 신규 생성 시 문항·선택지 셔플 후 `quiz_session_item` 12행 생성.
+- 서버는 `fn_create_quiz_session(participant, round, items)` RPC로 세션 1행과 문항 12행을 한 트랜잭션에서 생성한다. 동시 시작 경합은 기존 세션 재개로 수렴한다.
 
 ### `GET /api/rounds/[no]/item`
 현재 문항 서빙.
@@ -121,11 +122,13 @@ res { isCorrect, isTimeout, correctAnswerLabel, explanation, legalRef,
 ### `POST /api/rounds/[no]/next`
 `current_index` 증가, `last_activity_at` 갱신.
 → `{ currentIndex, isCompleted }`
+- 마지막 문항에서는 저장된 문항 확정 결과를 다시 집계해 `status`와 `score`를 복구하므로, 답변 확정과 세션 갱신 사이의 일시 실패 후 재호출해도 멱등적으로 완료된다.
 
 ### `GET /api/rounds/[no]/result`
 → `{ score, totalItems, pct, points, roundRank, items: [{ seq, itemCode, isCorrect, isTimeout, stem, correctAnswerLabel, explanation }] }`
 - `points` = 회차 포인트(business-rules 5.0). `roundRank`는 포인트 기준 순위다.
 - 세션이 없으면 `404 NOT_FOUND`. 아직 진행 중이면 `409 IN_PROGRESS` — 클라이언트는 응시 화면으로 이동한다(결과는 완료 후에만, business-rules 3.5).
+- 조회 시 30분 유휴 세션을 lazy 만료하고, 완료·만료 세션의 점수는 확정 문항 기준으로 재조정한다.
 
 ### `GET /api/rounds/[no]/review`
 종료 회차 전체 문항·정답·해설. 미종료 시 `403 ROUND_NOT_CLOSED`.
