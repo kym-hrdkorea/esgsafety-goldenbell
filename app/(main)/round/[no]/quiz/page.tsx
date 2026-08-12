@@ -558,6 +558,7 @@ export default function QuizPage({
                   setShortText(v);
                   setTried(false);
                 }}
+                onSubmit={onSubmitClick}
               />
             )}
           </>

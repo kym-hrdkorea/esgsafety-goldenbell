@@ -21,6 +21,7 @@ req  { empNo, nickname, departmentId, pin }
 res  201 { participantId, nickname }
 err  409 EMP_NO_TAKEN | NICKNAME_TAKEN, 400 VALIDATION
 ```
+- `400 VALIDATION` 응답은 `{ code, field, message }` 형식이다. `field`는 `empNo`, `nickname`, `departmentId`, `pin`, `form` 중 하나이며, 가입 화면은 해당 입력란에 오류를 표시한다.
 - `orgUnitId`는 서버가 `departmentId`로부터 조회해 채운다. 클라이언트 값 무시.
 
 ### `POST /api/auth/login`
@@ -218,6 +219,8 @@ GET /api/admin/short-unmatched     → [{ itemCode, roundNo, nickname, submitted
 ### `GET /api/admin/export/[kind]`
 `kind` ∈ `answers` | `scores` | `items` | `matched` | `outcomes` | `heatmap` | `participation`. 무효 kind는 `404 NOT_FOUND`.
 - CSV: UTF-8 **BOM** + CRLF (Excel 한글 깨짐 방지). `content-disposition: attachment`.
+- CSV의 문자열 셀은 Excel 수식으로 해석될 수 있는 선행 `=`, `+`, `-`, `@`를 이스케이프한다. 대량 조회는 안정적인 고유 정렬과 페이지네이션으로 전량 수집한다.
+- 관리자 화면과 CSV의 시각은 `Asia/Seoul` 기준 `YYYY-MM-DD HH:mm:ss`로 표시한다.
 - ★ **사번(emp_no)은 CSV에만 포함한다**(운영자 확정, T11 — 포상·행정 대조용). 화면 API에는 싣지 않는다.
   내려받은 파일의 보관·폐기 책임은 운영자에게 있다.
 

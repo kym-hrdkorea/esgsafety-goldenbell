@@ -35,6 +35,7 @@ export default function SignupPage() {
   const [empNoError, setEmpNoError] = useState<string | null>(null);
   const [nicknameError, setNicknameError] = useState<string | null>(null);
   const [pinError, setPinError] = useState<string | null>(null);
+  const [formError, setFormError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   // 소속·부서 통합 검색 (기본 모드). 부서명 6종이 지역 소속 수십 곳에 반복되므로
@@ -151,6 +152,7 @@ export default function SignupPage() {
     setEmpNoError(null);
     setNicknameError(null);
     setPinError(null);
+    setFormError(null);
     setDeptError(null);
 
     // 검색 콤보박스는 native required가 없다 — 미선택 제출을 여기서 차단
@@ -192,11 +194,19 @@ export default function SignupPage() {
         setEmpNoError(body.message);
       } else if (body.code === "NICKNAME_TAKEN") {
         setNicknameError(body.message);
-      } else {
+      } else if (body.field === "empNo") {
+        setEmpNoError(body.message);
+      } else if (body.field === "nickname") {
+        setNicknameError(body.message);
+      } else if (body.field === "departmentId") {
+        setDeptError(body.message);
+      } else if (body.field === "pin") {
         setPinError(body.message);
+      } else {
+        setFormError(body.message);
       }
     } catch {
-      setPinError("문제가 발생했습니다. 잠시 후 다시 시도해 주세요.");
+      setFormError("문제가 발생했습니다. 잠시 후 다시 시도해 주세요.");
     } finally {
       setSubmitting(false);
     }
@@ -478,6 +488,12 @@ export default function SignupPage() {
               <div className="gb-field-error -mt-2">
                 <span className="font-black">✕</span>
                 {pinError}
+              </div>
+            )}
+            {formError && (
+              <div className="gb-field-error -mt-2">
+                <span className="font-black">✕</span>
+                {formError}
               </div>
             )}
           </div>

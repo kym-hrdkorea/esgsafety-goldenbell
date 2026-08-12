@@ -31,7 +31,9 @@ function myAnswerLabel(
         : null;
     case "ORDER":
       return Array.isArray(submitted)
-        ? (submitted as number[]).map((o) => o + 1).join(" → ")
+        ? (submitted as number[])
+            .map((o) => choices?.[o] ?? String(o + 1))
+            .join(" → ")
         : null;
     case "SHORT":
       return typeof submitted === "string" ? submitted : null;

@@ -175,6 +175,8 @@ node db/validate-items.mjs
 node db/validate-prelearning.mjs
 node db/validate-outcomes.mjs
 node db/validate-session-functions.mjs
+node db/validate-t20.mjs
+npm.cmd run test:admin
 ```
 
 ## 개시 전 반드시 확인

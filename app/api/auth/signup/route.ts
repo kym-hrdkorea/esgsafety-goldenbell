@@ -7,37 +7,51 @@ import { issueSession } from "@/lib/session";
 export const dynamic = "force-dynamic";
 
 const BodySchema = z.object({
-  empNo: z.string().regex(/^\d+$/),
-  nickname: z.string().min(2).max(12),
+  empNo: z.string().trim().regex(/^\d+$/),
+  nickname: z.string().trim().min(2).max(12),
   departmentId: z.number().int().positive(),
   pin: z.string().regex(/^\d{4}$/),
 });
+
+function validationResponse(field: string, message: string) {
+  return NextResponse.json(
+    { code: "VALIDATION", field, message },
+    { status: 400 }
+  );
+}
+
+function validationMessage(field: string): string {
+  switch (field) {
+    case "empNo":
+      return "사번을 확인해 주세요.";
+    case "nickname":
+      return "닉네임을 2~12자로 입력해 주세요.";
+    case "departmentId":
+      return "소속과 부서를 선택해 주세요.";
+    case "pin":
+      return "숫자 4자리를 입력해 주세요.";
+    default:
+      return "입력값을 확인해 주세요.";
+  }
+}
 
 export async function POST(req: NextRequest) {
   let body: z.infer<typeof BodySchema>;
   try {
     const parsed = BodySchema.safeParse(await req.json());
     if (!parsed.success) {
-      return NextResponse.json(
-        { code: "VALIDATION", message: "숫자 4자리를 입력해 주세요." },
-        { status: 400 }
-      );
+      const field = String(parsed.error.issues[0]?.path[0] ?? "form");
+      return validationResponse(field, validationMessage(field));
     }
     body = parsed.data;
   } catch {
-    return NextResponse.json(
-      {
-        code: "VALIDATION",
-        message: "문제가 발생했습니다. 잠시 후 다시 시도해 주세요.",
-      },
-      { status: 400 }
-    );
+    return validationResponse("form", "입력값을 확인해 주세요.");
   }
 
   try {
     const db = getDb();
 
-    // org_unit_id는 부서로부터 서버가 결정한다. 클라이언트 값은 받지도 않는다. (A9)
+    // 소속은 부서에서 서버가 결정한다. 클라이언트의 소속 값은 받지 않는다.
     const { data: dept, error: deptErr } = await db
       .from("department")
       .select("id, org_unit_id")
@@ -45,17 +59,10 @@ export async function POST(req: NextRequest) {
       .maybeSingle();
     if (deptErr) throw new Error(deptErr.message);
     if (!dept) {
-      return NextResponse.json(
-        {
-          code: "VALIDATION",
-          message: "문제가 발생했습니다. 잠시 후 다시 시도해 주세요.",
-        },
-        { status: 400 }
-      );
+      return validationResponse("departmentId", "소속과 부서를 선택해 주세요.");
     }
 
     const passwordHash = await bcrypt.hash(body.pin, 10);
-
     const { data: created, error: insErr } = await db
       .from("participant")
       .insert({
@@ -69,7 +76,7 @@ export async function POST(req: NextRequest) {
       .single();
 
     if (insErr) {
-      // UNIQUE 위반 → 어느 컬럼인지 구분해 응답 (A2·A3)
+      // UNIQUE 위반 시 실제 충돌한 필드를 구분해 표시한다.
       if (insErr.code === "23505") {
         if (insErr.message.includes("emp_no")) {
           return NextResponse.json(
@@ -81,17 +88,13 @@ export async function POST(req: NextRequest) {
           );
         }
         return NextResponse.json(
-          {
-            code: "NICKNAME_TAKEN",
-            message: "이미 사용 중인 닉네임입니다.",
-          },
+          { code: "NICKNAME_TAKEN", message: "이미 사용 중인 닉네임입니다." },
           { status: 409 }
         );
       }
       throw new Error(insErr.message);
     }
 
-    // 가입 즉시 로그인 상태 (A1)
     const res = NextResponse.json(
       { participantId: created.id, nickname: created.nickname },
       { status: 201 }
@@ -99,7 +102,6 @@ export async function POST(req: NextRequest) {
     issueSession(res, created.id);
     return res;
   } catch (err) {
-    // 로그에 사번·PIN을 남기지 않는다 (규칙 10)
     console.error("[auth/signup]", err instanceof Error ? err.message : err);
     return NextResponse.json(
       {

@@ -101,10 +101,14 @@ export default function DashboardPage() {
         const roundRows: RoundRow[] = await rRes.json();
         setDash(await dRes.json());
         setRounds(roundRows);
-        // 회차별 탭 기본값: 시작된(비locked) 회차 중 최신
+        // 회차별 탭 기본값: 실제 종료된 회차 중 최신을 우선한다.
+        // 새 회차가 열린 직후에는 최신 회차 스냅샷이 비어 있을 수 있어
+        // 월요일마다 빈 표를 기본 화면으로 보여주지 않는다.
         const started = roundRows.filter((r) => r.state !== "locked");
-        if (started.length > 0) {
-          setSelectedRound(Math.max(...started.map((r) => r.roundNo)));
+        const ended = started.filter((r) => r.state === "closed");
+        const candidates = ended.length > 0 ? ended : started;
+        if (candidates.length > 0) {
+          setSelectedRound(Math.max(...candidates.map((r) => r.roundNo)));
         }
       } catch {
         setBlocked("문제가 발생했습니다. 잠시 후 다시 시도해 주세요.");

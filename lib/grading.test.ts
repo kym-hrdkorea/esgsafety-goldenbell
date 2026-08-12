@@ -172,6 +172,12 @@ describe("answerLabel", () => {
       "4 → 3 → 2 → 1"
     );
   });
+  test("ORDER: 복습에서는 선택지 문구로 표기", () => {
+    assert.equal(
+      answerLabel("ORDER", [1, 3, 0, 2], ["A", "B", "C", "D"], null),
+      "B → D → A → C"
+    );
+  });
   test("SHORT: 대표 정답", () => {
     assert.equal(answerLabel("SHORT", ["아차사고"], null, null), "아차사고");
   });

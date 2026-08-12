@@ -97,7 +97,11 @@ export function answerLabel(
       return choices?.[answer as number] ?? "";
     case "ORDER": {
       const seq = answer as number[];
-      if (!choiceOrder) return seq.map((o) => o + 1).join(" → ");
+      if (!choiceOrder) {
+        // 복습은 원본 선택지 순서를 함께 보여주므로 숫자 좌표 대신
+        // 실제 선택지 문구를 표시한다. choices가 없는 오래된 데이터는 번호로 폴백한다.
+        return seq.map((o) => choices?.[o] ?? String(o + 1)).join(" → ");
+      }
       return seq.map((o) => choiceOrder.indexOf(o) + 1).join(" → ");
     }
     case "SHORT": {

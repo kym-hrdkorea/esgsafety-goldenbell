@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/lib/db";
 import { getAdminId } from "@/lib/session";
-import { fetchAll, participantMap, toCsv } from "@/lib/admin";
+import { fetchAll, formatKst, participantMap, toCsv } from "@/lib/admin";
 import { apiError } from "@/lib/quiz";
 
 export const dynamic = "force-dynamic";
@@ -47,7 +47,7 @@ async function buildCsv(kind: Kind): Promise<string> {
           "정답",
           "시간초과",
           "경과ms",
-          "답변시각",
+          "답변시각(KST)",
         ],
         rows.map((r) => {
           const ses = r.session as unknown as {
@@ -70,7 +70,7 @@ async function buildCsv(kind: Kind): Promise<string> {
             r.is_correct === null ? "" : r.is_correct ? 1 : 0,
             r.is_timeout ? 1 : 0,
             r.elapsed_ms,
-            r.answered_at,
+            formatKst(r.answered_at),
           ];
         })
       );
@@ -87,7 +87,7 @@ async function buildCsv(kind: Kind): Promise<string> {
           .range(from, to)
       );
       return toCsv(
-        ["사번", "닉네임", "소속", "부서", "회차", "점수", "문항수", "정답률", "포인트", "종료시각"],
+        ["사번", "닉네임", "소속", "부서", "회차", "점수", "문항수", "정답률", "포인트", "종료시각(KST)"],
         rows.map((r) => {
           const p = pmap.get(r.participant_id);
           return [
@@ -100,7 +100,7 @@ async function buildCsv(kind: Kind): Promise<string> {
             r.total_items,
             r.pct,
             r.points,
-            r.completed_at,
+            formatKst(r.completed_at),
           ];
         })
       );
@@ -142,6 +142,7 @@ async function buildCsv(kind: Kind): Promise<string> {
           .from("v_matched_pre_post")
           .select("participant_id, nickname, org_unit_name, pre_n, post_n, pre_pct, post_pct, gain_pp")
           .order("gain_pp", { ascending: false })
+          .order("participant_id")
           .range(from, to)
       );
       return toCsv(

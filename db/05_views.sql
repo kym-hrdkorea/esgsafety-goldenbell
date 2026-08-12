@@ -53,7 +53,7 @@ CREATE OR REPLACE FUNCTION fn_min_rounds() RETURNS int
 LANGUAGE sql STABLE AS $$
   SELECT CASE
            WHEN (SELECT count(*) FROM quiz_round
-                  WHERE is_published AND opens_at <= now()) <= 2
+                  WHERE closes_at < now()) <= 2
              THEN 0
            ELSE (SELECT (value)::int FROM app_config
                   WHERE key = 'min_rounds_for_ranking')

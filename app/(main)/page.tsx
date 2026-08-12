@@ -223,18 +223,18 @@ export default function HomePage() {
       {/* 지난 회차 + 미개방 */}
       {(closed.length > 0 || locked.length > 0) && (
         <div className="flex flex-col gap-2.5">
-          <div className="flex items-center gap-2">
-            <div className="h-[14px] w-1 bg-gb-text-dim" />
-            <div className="text-[14px] font-extrabold text-gb-text-strong-sub">
-              지난 회차
-            </div>
-            <div className="flex-1" />
-            {closed.length > 0 && (
+          {closed.length > 0 && (
+            <div className="flex items-center gap-2">
+              <div className="h-[14px] w-1 bg-gb-text-dim" />
+              <div className="text-[14px] font-extrabold text-gb-text-strong-sub">
+                지난 회차
+              </div>
+              <div className="flex-1" />
               <div className="text-[12px] font-bold text-gb-text-secondary">
                 복습 (점수 미반영)
               </div>
-            )}
-          </div>
+            </div>
+          )}
 
           {closed.map((r) => {
             const participated = r.myScore !== null;
@@ -292,6 +292,19 @@ export default function HomePage() {
               </div>
             );
           })}
+
+          {locked.length > 0 && (
+            <div className="mt-2 flex items-center gap-2">
+              <div className="h-[14px] w-1 bg-gb-text-dim" />
+              <div className="text-[14px] font-extrabold text-gb-text-strong-sub">
+                예정 회차
+              </div>
+              <div className="flex-1" />
+              <div className="text-[12px] font-bold text-gb-text-secondary">
+                아직 개방 전
+              </div>
+            </div>
+          )}
 
           {locked.map((r) => (
             <div

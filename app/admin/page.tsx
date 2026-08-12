@@ -34,7 +34,7 @@ type Outcomes = {
   anchors: OutcomeAnchor[];
   transfers: OutcomeTransfer[];
 };
-type ShortRow = { itemCode: string; roundNo: number | null; nickname: string; submitted: string; answeredAt: string };
+type ShortRow = { itemCode: string; roundNo: number | null; nickname: string; submitted: string; answeredAt: string | null };
 type RoundStatus = {
   roundNo: number; season: number; theme: string;
   opensAt: string; closesAt: string; isPublished: boolean;
@@ -42,7 +42,8 @@ type RoundStatus = {
 };
 
 // 표시 전용 KST 변환. 개방 판정은 서버가 이미 state로 내려준다 (business-rules 2절)
-function kst(iso: string): string {
+function kst(iso: string | null | undefined): string {
+  if (!iso) return "-";
   return new Intl.DateTimeFormat("ko-KR", {
     timeZone: "Asia/Seoul", month: "2-digit", day: "2-digit",
     hour: "2-digit", minute: "2-digit", hour12: false,
@@ -93,6 +94,7 @@ function Empty() {
 
 export default function AdminPage() {
   const [authed, setAuthed] = useState<boolean | null>(null);
+  const [ready, setReady] = useState(false);
   const [loginId, setLoginId] = useState("");
   const [password, setPassword] = useState("");
   const [loginError, setLoginError] = useState<string | null>(null);
@@ -109,41 +111,49 @@ export default function AdminPage() {
   const [loadError, setLoadError] = useState<string | null>(null);
 
   const loadAll = useCallback(async () => {
-    const paths = [
-      "/api/admin/rounds",
-      "/api/admin/stats/participation",
-      "/api/admin/stats/items",
-      "/api/admin/stats/matched",
-      "/api/admin/stats/outcomes",
-      "/api/admin/stats/heatmap",
-      "/api/admin/stats/prelearning",
-      "/api/admin/short-unmatched",
-    ];
-    const results = await Promise.all(paths.map((p) => fetch(p)));
-    if (results.some((r) => r.status === 401)) {
-      setAuthed(false);
-      return;
-    }
-    if (results.some((r) => !r.ok)) {
-      setLoadError("조회에 실패했습니다. 새로고침해 주세요.");
+    setLoadError(null);
+    try {
+      const paths = [
+        "/api/admin/rounds",
+        "/api/admin/stats/participation",
+        "/api/admin/stats/items",
+        "/api/admin/stats/matched",
+        "/api/admin/stats/outcomes",
+        "/api/admin/stats/heatmap",
+        "/api/admin/stats/prelearning",
+        "/api/admin/short-unmatched",
+      ];
+      const results = await Promise.all(paths.map((p) => fetch(p)));
+      if (results.some((r) => r.status === 401)) {
+        setAuthed(false);
+        return;
+      }
+      if (results.some((r) => !r.ok)) {
+        setAuthed(true);
+        throw new Error("admin data request failed");
+      }
+      // ★ paths 순서와 아래 구조분해 순서가 1:1로 맞아야 한다
+      const [ro, pa, it, ma, ou, he, pl, sh] = await Promise.all(
+        results.map((r) => r.json())
+      );
+      setRounds(ro);
+      setParticipation(pa);
+      setItems(it);
+      setMatched(ma);
+      setOutcomes(ou);
+      setHeatmap(he);
+      setPrelearn(pl);
+      setShorts(sh);
       setAuthed(true);
-      return;
+    } catch {
+      setLoadError("조회에 실패했습니다. 네트워크와 서버 상태를 확인한 뒤 다시 시도해 주세요.");
+    } finally {
+      setReady(true);
     }
-    // ★ paths 순서와 아래 구조분해 순서가 1:1로 맞아야 한다
-    const [ro, pa, it, ma, ou, he, pl, sh] = await Promise.all(results.map((r) => r.json()));
-    setRounds(ro);
-    setParticipation(pa);
-    setItems(it);
-    setMatched(ma);
-    setOutcomes(ou);
-    setHeatmap(he);
-    setPrelearn(pl);
-    setShorts(sh);
-    setAuthed(true);
   }, []);
 
   useEffect(() => {
-    loadAll().catch(() => setLoadError("조회에 실패했습니다. 새로고침해 주세요."));
+    void loadAll();
   }, [loadAll]);
 
   async function handleLogin(e: React.FormEvent) {
@@ -176,10 +186,21 @@ export default function AdminPage() {
     setAuthed(false);
   }
 
-  if (authed === null) {
+  if (!ready) {
     return (
       <main className="flex min-h-screen items-center justify-center">
         <p className="text-[14px] text-gb-text-secondary">불러오는 중...</p>
+      </main>
+    );
+  }
+
+  if (authed === null && loadError) {
+    return (
+      <main className="flex min-h-screen flex-col items-center justify-center gap-4 px-5 text-center">
+        <p className="m-0 text-[14px] leading-[1.6] text-gb-text-body">{loadError}</p>
+        <button type="button" className="gb-cta max-w-[320px]" onClick={() => void loadAll()}>
+          다시 시도
+        </button>
       </main>
     );
   }
@@ -613,7 +634,7 @@ export default function AdminPage() {
                     <td className={`${TD} ${NUM}`}>{s.roundNo}</td>
                     <td className={TD}>{s.nickname}</td>
                     <td className={TD}>{s.submitted}</td>
-                    <td className={`${TD} ${NUM}`}>{s.answeredAt?.slice(0, 19).replace("T", " ")}</td>
+                    <td className={`${TD} ${NUM}`}>{kst(s.answeredAt)}</td>
                   </tr>
                 ))}
               </tbody>

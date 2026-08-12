@@ -17,9 +17,10 @@ export async function GET(req: NextRequest) {
       db
         .from("v_matched_pre_post")
         .select(
-          "nickname, org_unit_name, pre_n, post_n, pre_pct, post_pct, gain_pp"
+          "participant_id, nickname, org_unit_name, pre_n, post_n, pre_pct, post_pct, gain_pp"
         )
         .order("gain_pp", { ascending: false })
+        .order("participant_id")
         .range(from, to)
     );
 
