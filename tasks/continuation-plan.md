@@ -9,14 +9,14 @@
 | 항목 | 상태 |
 |---|---|
 | 기준 브랜치 | `main` |
-| 기준 커밋 | `3346927 docs: 새 PC 개발 이어받기 절차 추가` |
+| 기준 커밋 | `706f936 docs: T14 6회차 연속 개발 계획 고정` |
 | T00~T13 | 기존 구현 완료. T12 부하 테스트 증적은 미완료 |
 | T14 계획 고정 | 완료 |
-| 다음 카드 | T15 — 로컬 환경 및 실DB 읽기 점검 |
+| 다음 카드 | T16 — 6회차 문항·일정·명세 개편 (사용자 확인 후 시작) |
 | 운영 일정 | 2026-08-17 시작 ~ 2026-09-25 종료, 월~금 KST |
 | 목표 규모 | 6회차 × 12문항 = 72문항 |
-| Supabase 연결 | `.env.local` 없음. 사용자 설정 전까지 실DB 점검 불가 |
-| 마지막 로컬 검증 | `typecheck` 통과, `test` 29/29 통과, `build` 통과. `/api/health`는 환경변수 부재로 실패 |
+| Supabase 연결 | 정상. 서버 전용 키로 REST 읽기 확인, 12개 대상 테이블 모두 0건 |
+| 마지막 로컬 검증 | `.env.local` 필수 7개 항목 입력·Git 제외 확인. Next 서버 기동 성공. `/api/health`는 `app_config` 0건으로 500 (연결 오류 아님) |
 
 ## 확정 운영·측정 기준
 
@@ -76,9 +76,9 @@
 
 완료 조건: 세 문서가 이 파일을 가리키고, 다음 카드가 T15로 명확하며, 문항 매핑과 KPI 기준이 기록되어 있다.
 
-### T15 — 로컬 환경 및 실DB 읽기 점검
+### T15 — 로컬 환경 및 실DB 읽기 점검 — 완료
 
-사용자 설정이 필요한 카드다. `.env.local`을 만든 뒤에만 진행한다.
+사용자 설정이 필요한 카드다. `.env.local`을 만든 뒤 진행한다.
 
 - Supabase 연결을 확인하고 `/api/health`를 호출한다.
 - 아래 행 수를 읽기 전용으로 조사한다: `quiz_round`, `quiz_item`, `participant`, `quiz_session`, `quiz_session_item`, `prelearning_view`.
@@ -101,7 +101,14 @@
 7. `.env.local`과 `service_role` 키는 채팅·스크린샷·GitHub에 올리지 않는다.
 8. 저장 후 채팅에 `T15 환경변수 작성 완료`라고만 회신한다. 실제 비밀값은 보내지 않는다.
 
-정상 조건: `/api/health`가 200을 반환하고 `app_config` 조회가 성공한다.
+검증 결과:
+
+- `.env.local`의 `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `SESSION_SECRET`, `CRON_SECRET`, `ADMIN_LOGIN_ID`, `ADMIN_INIT_PASSWORD`, `TZ`가 모두 입력되어 있고, `.env.local`은 Git 추적에서 제외되어 있다.
+- 서버 전용 키를 화면에 출력하지 않고 Supabase REST를 읽기 전용 호출했다. `org_category`, `org_unit`, `department`, `app_config`, `quiz_round`, `quiz_item`, `participant`, `quiz_session`, `quiz_session_item`, `prelearning_view`, `ranking_snapshot`, `admin_user`가 모두 HTTP 200 및 `Content-Range */0`으로 확인됐다.
+- 로컬 Next.js 서버는 `.env.local`을 읽고 정상 기동했다. `/api/health`는 `app_config`가 초기화되어 0건인 상태에서 `.single()`이 실패하므로 500을 반환한다. 이는 Supabase 연결 실패가 아니라 T16 시드 전의 예상 상태다.
+- 의도한 전체 초기화가 완료되어 활동 데이터가 없으므로 T16 진행 조건을 충족한다. 기존 8회차 SQL은 6회차 개편 전까지 실행하지 않는다.
+
+완료 조건: 환경변수 입력·보안 제외·실DB 읽기 점검·활동 데이터 확인을 완료했다. 다음 카드 T16은 사용자가 시작을 확인한 뒤 착수한다.
 
 ### T16 — 6회차 문항·일정·명세 개편
 
