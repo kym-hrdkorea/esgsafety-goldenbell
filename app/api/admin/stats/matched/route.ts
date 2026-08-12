@@ -6,7 +6,7 @@ import { apiError } from "@/lib/quiz";
 
 export const dynamic = "force-dynamic";
 
-// 동일인 사전·사후 대조 (v_matched_pre_post — 캠페인 핵심 성과지표).
+// 동일인 사전·사후 대조 (v_matched_pre_post — 12쌍 완전대응 참가자만).
 // 화면에는 닉네임만 노출한다(addendum H항). 사번은 CSV export에만 실린다.
 export async function GET(req: NextRequest) {
   if (!getAdminId(req)) return apiError(401, "UNAUTHENTICATED");

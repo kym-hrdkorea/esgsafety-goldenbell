@@ -228,59 +228,152 @@ SELECT i.round_no, i.anchor_code,
        COUNT(*) AS n,
        ROUND(AVG(CASE WHEN si.is_correct THEN 1.0 ELSE 0 END) * 100, 1) AS pct
 FROM quiz_session_item si
+JOIN quiz_session s ON s.id = si.session_id
 JOIN quiz_item i ON i.id = si.item_id
-WHERE i.anchor_code IS NOT NULL
+WHERE s.status IN ('completed', 'expired')
+  AND i.anchor_code IS NOT NULL
   AND (si.answered_at IS NOT NULL OR si.is_timeout)
 GROUP BY i.round_no, i.anchor_code
 ORDER BY i.anchor_code, i.round_no;
 
 -- ⑧ 동일인 대조 사전·사후 (★ 캠페인 핵심 성과지표)
---    사전 M01~M12(1·2회차) / 사후 M01P~M12P(5·6회차) 모두 응시한 사람만
+--    사전 M01~M12(1·2회차) / 사후 M01P~M12P(5·6회차) 12쌍을
+--    모두 확정한 사람만 포함한다. 일부 응답자는 참여 통계에는 남지만
+--    1차 KPI에서는 제외한다. 시간초과는 is_correct=false로 집계한다.
 CREATE OR REPLACE VIEW v_matched_pre_post AS
 WITH scored AS (
   SELECT s.participant_id,
          CASE WHEN i.measure_code ~ '^M\d{2}$'  THEN 'pre'
               WHEN i.measure_code ~ '^M\d{2}P$' THEN 'post' END AS phase,
-         si.is_correct
+         i.measure_code,
+         COALESCE(si.is_correct, false) AS is_correct
   FROM quiz_session_item si
   JOIN quiz_session s ON s.id = si.session_id
   JOIN quiz_item    i ON i.id = si.item_id
-  WHERE i.measure_code ~ '^M\d{2}P?$'
+  WHERE s.status IN ('completed', 'expired')
+    AND i.measure_code ~ '^M(0[1-9]|1[0-2])P?$'
     AND (si.answered_at IS NOT NULL OR si.is_timeout)
 ),
 agg AS (
   SELECT participant_id,
-         SUM(CASE WHEN phase = 'pre'  THEN 1 ELSE 0 END) AS pre_n,
-         SUM(CASE WHEN phase = 'post' THEN 1 ELSE 0 END) AS post_n,
-         AVG(CASE WHEN phase = 'pre'  AND is_correct THEN 1.0
-                  WHEN phase = 'pre'  THEN 0 END) * 100 AS pre_pct,
-         AVG(CASE WHEN phase = 'post' AND is_correct THEN 1.0
-                  WHEN phase = 'post' THEN 0 END) * 100 AS post_pct
+         COUNT(DISTINCT measure_code) FILTER (WHERE phase = 'pre') AS pre_n,
+         COUNT(DISTINCT measure_code) FILTER (WHERE phase = 'post') AS post_n,
+         SUM(CASE WHEN phase = 'pre'  AND is_correct THEN 1 ELSE 0 END) AS pre_correct,
+         SUM(CASE WHEN phase = 'post' AND is_correct THEN 1 ELSE 0 END) AS post_correct
   FROM scored GROUP BY participant_id
+),
+matched AS (
+  SELECT participant_id, pre_n, post_n,
+         ROUND((pre_correct::numeric / 12) * 100, 1) AS pre_pct,
+         ROUND((post_correct::numeric / 12) * 100, 1) AS post_pct
+  FROM agg
+  WHERE pre_n = 12 AND post_n = 12
 )
-SELECT a.participant_id, p.nickname, u.name AS org_unit_name,
-       a.pre_n, a.post_n,
-       ROUND(a.pre_pct, 1)  AS pre_pct,
-       ROUND(a.post_pct, 1) AS post_pct,
-       ROUND(a.post_pct - a.pre_pct, 1) AS gain_pp
-FROM agg a
-JOIN participant p ON p.id = a.participant_id
+SELECT m.participant_id, p.nickname, u.name AS org_unit_name,
+       m.pre_n, m.post_n,
+       m.pre_pct,
+       m.post_pct,
+       ROUND(m.post_pct - m.pre_pct, 1) AS gain_pp
+FROM matched m
+JOIN participant p ON p.id = m.participant_id
 JOIN org_unit    u ON u.id = p.org_unit_id
-WHERE a.pre_n > 0 AND a.post_n > 0     -- ★ 양쪽 모두 응시한 사람만
 ORDER BY gain_pp DESC;
 
--- ⑨ 전이검증 문항 정답률 (T01~T04)
+-- ⑨ 12쌍 완전대응 성과 요약
+--    평균은 완전대응 참가자별 정답률의 평균이고, 중앙값·향상자 비율도
+--    같은 참가자 집합에서 계산한다. 표본이 없어도 1행을 반환한다.
+CREATE OR REPLACE VIEW v_matched_summary AS
+SELECT COUNT(*)::int AS matched_n,
+       12::int AS pair_count,
+       ROUND(AVG(pre_pct), 1) AS pre_avg_pct,
+       ROUND(AVG(post_pct), 1) AS post_avg_pct,
+       ROUND(AVG(gain_pp), 1) AS mean_gain_pp,
+       ROUND((PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY gain_pp::double precision))::numeric, 1)
+         AS median_gain_pp,
+       COUNT(*) FILTER (WHERE gain_pp > 0)::int AS improved_n,
+       ROUND(
+         (COUNT(*) FILTER (WHERE gain_pp > 0)::numeric
+           / NULLIF(COUNT(*), 0)::numeric) * 100,
+         1
+       ) AS improved_pct
+FROM v_matched_pre_post;
+
+-- ⑩ 문항쌍별 사전·사후 정답률 (완전대응 참가자 기준)
+--    generate_series로 응답자가 없어도 M01~M12 12행을 유지한다.
+CREATE OR REPLACE VIEW v_measure_pair_stats AS
+WITH pair_codes AS (
+  SELECT 'M' || LPAD(n::text, 2, '0') AS measure_code
+  FROM generate_series(1, 12) AS g(n)
+),
+item_codes AS (
+  SELECT regexp_replace(measure_code, 'P$', '') AS measure_code,
+         MAX(item_code) FILTER (WHERE measure_code !~ 'P$') AS pre_item_code,
+         MAX(item_code) FILTER (WHERE measure_code ~ 'P$')  AS post_item_code
+  FROM quiz_item
+  WHERE measure_code ~ '^M(0[1-9]|1[0-2])P?$'
+  GROUP BY regexp_replace(measure_code, 'P$', '')
+),
+matched AS (
+  SELECT participant_id
+  FROM v_matched_pre_post
+),
+responses AS (
+  SELECT s.participant_id,
+         regexp_replace(i.measure_code, 'P$', '') AS measure_code,
+         CASE WHEN i.measure_code ~ 'P$' THEN 'post' ELSE 'pre' END AS phase,
+         (COALESCE(si.is_correct, false))::int AS is_correct
+  FROM quiz_session_item si
+  JOIN quiz_session s ON s.id = si.session_id
+  JOIN quiz_item i ON i.id = si.item_id
+  JOIN matched m ON m.participant_id = s.participant_id
+  WHERE s.status IN ('completed', 'expired')
+    AND i.measure_code ~ '^M(0[1-9]|1[0-2])P?$'
+    AND (si.answered_at IS NOT NULL OR si.is_timeout)
+),
+pivoted AS (
+  SELECT participant_id, measure_code,
+         MAX(is_correct) FILTER (WHERE phase = 'pre')  AS pre_correct,
+         MAX(is_correct) FILTER (WHERE phase = 'post') AS post_correct
+  FROM responses
+  GROUP BY participant_id, measure_code
+)
+SELECT p.measure_code,
+       ic.pre_item_code,
+       ic.post_item_code,
+       COUNT(v.participant_id)::int AS n,
+       ROUND((AVG(v.pre_correct)::numeric) * 100, 1) AS pre_pct,
+       ROUND((AVG(v.post_correct)::numeric) * 100, 1) AS post_pct,
+       ROUND(((AVG(v.post_correct) - AVG(v.pre_correct))::numeric) * 100, 1)
+         AS gain_pp
+FROM pair_codes p
+LEFT JOIN pivoted v ON v.measure_code = p.measure_code
+LEFT JOIN item_codes ic ON ic.measure_code = p.measure_code
+GROUP BY p.measure_code, ic.pre_item_code, ic.post_item_code
+ORDER BY p.measure_code;
+
+-- ⑪ 전이검증 문항 정답률 (T01~T04)
 CREATE OR REPLACE VIEW v_transfer_stats AS
 SELECT i.item_code, i.round_no, COUNT(*) AS n,
        ROUND(AVG(CASE WHEN si.is_correct THEN 1.0 ELSE 0 END) * 100, 1) AS pct
 FROM quiz_session_item si
+JOIN quiz_session s ON s.id = si.session_id
 JOIN quiz_item i ON i.id = si.item_id
-WHERE i.measure_code ~ '^T\d{2}$'
+WHERE s.status IN ('completed', 'expired')
+  AND i.measure_code ~ '^T0[1-4]$'
   AND (si.answered_at IS NOT NULL OR si.is_timeout)
 GROUP BY i.item_code, i.round_no
 ORDER BY i.item_code;
 
--- ⑩ 취약영역 히트맵 (소속 × 영역)
+-- 관리자 API용 전이 코드 매핑. 기존 v_transfer_stats의 열 구조는 유지하고
+-- T01~T04 measure_code를 함께 제공하는 별도 뷰를 사용한다.
+CREATE OR REPLACE VIEW v_transfer_outcome_stats AS
+SELECT i.measure_code, t.item_code, t.round_no, t.n, t.pct
+FROM v_transfer_stats t
+JOIN quiz_item i ON i.item_code = t.item_code
+WHERE i.measure_code ~ '^T0[1-4]$'
+ORDER BY i.measure_code;
+
+-- ⑫ 취약영역 히트맵 (소속 × 영역)
 CREATE OR REPLACE VIEW v_heatmap AS
 SELECT u.name AS org_unit_name,
        COALESCE(i.category, 'MEASURE') AS category,
@@ -295,7 +388,7 @@ WHERE si.answered_at IS NOT NULL OR si.is_timeout
 GROUP BY u.name, COALESCE(i.category, 'MEASURE')
 ORDER BY u.name, category;
 
--- ⑪ 사전학습 열람 효과 (퀴즈 시작 전 열람자 vs 미열람자 정답률)
+-- ⑬ 사전학습 열람 효과 (퀴즈 시작 전 열람자 vs 미열람자 정답률)
 CREATE OR REPLACE VIEW v_prelearning_effect AS
 SELECT r.round_no,
        (pv.participant_id IS NOT NULL) AS viewed,
@@ -311,7 +404,7 @@ LEFT JOIN prelearning_view pv
 GROUP BY r.round_no, (pv.participant_id IS NOT NULL)
 ORDER BY r.round_no, viewed;
 
--- ⑫ 참여 지표
+-- ⑭ 참여 지표
 CREATE OR REPLACE VIEW v_participation AS
 SELECT r.round_no,
        COUNT(DISTINCT s.participant_id) FILTER

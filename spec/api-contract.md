@@ -195,15 +195,25 @@ GET /api/admin/stats/participation → [{ roundNo, started, finished, registered
 GET /api/admin/stats/items         → [{ itemCode, roundNo, level, itemType, category,
                                         anchorCode, measureCode, n, pValue, timeoutPct, discrimination }]
 GET /api/admin/stats/matched       → [{ nickname, orgUnitName, preN, postN, prePct, postPct, gainPp }]
+GET /api/admin/stats/outcomes       → {
+  summary: { matchedN, pairCount, preAvgPct, postAvgPct, meanGainPp,
+             medianGainPp, improvedN, improvedPct },
+  pairs: [{ measureCode, preItemCode, postItemCode, n, prePct, postPct, gainPp }],
+  anchors: [{ roundNo, anchorCode, n, pct }],
+  transfers: [{ measureCode, itemCode, roundNo, n, pct }]
+}
 GET /api/admin/stats/heatmap       → [{ orgUnitName, category, n, pct }]
 GET /api/admin/stats/prelearning   → [{ roundNo, viewed, n, avgPct }]
 GET /api/admin/short-unmatched     → [{ itemCode, roundNo, nickname, submitted, answeredAt }]
 ```
 - `viewed`는 `prelearning_view.viewed_at <= quiz_session.started_at`인 사전학습 열람만 뜻한다. 퀴즈 시작 후 재열람 로그는 보존하지만 열람 효과 집계에서는 미열람으로 분류한다.
+- `/api/admin/stats/matched`와 `outcomes`의 1차 KPI는 사전 M01~M12와 사후 M01P~M12P를 **각각 12개 모두 확정한 동일인**만 포함한다. 일부 응답자는 참여 통계에는 남지만 이 집계에서는 제외한다.
+- 시간초과(`is_timeout=true`)는 오답(`is_correct=false`)으로 계산한다.
+- `outcomes.summary`의 평균은 완전대응 참가자별 정답률 평균, `meanGainPp`는 개인별 향상폭 평균, `medianGainPp`는 개인별 향상폭 중앙값, `improvedPct`는 향상폭이 0보다 큰 참가자 비율이다.
 - `measureCode`/`anchorCode`/`level`은 성과분석 목적의 **관리자 전용** 데이터다. 참가자 응답 금지(규칙 2-1)는 참가자 API에 적용되는 규칙이며, `hq_admin` 인증 뒤에서는 제공한다.
 
 ### `GET /api/admin/export/[kind]`
-`kind` ∈ `answers` | `scores` | `items` | `matched` | `heatmap` | `participation`. 무효 kind는 `404 NOT_FOUND`.
+`kind` ∈ `answers` | `scores` | `items` | `matched` | `outcomes` | `heatmap` | `participation`. 무효 kind는 `404 NOT_FOUND`.
 - CSV: UTF-8 **BOM** + CRLF (Excel 한글 깨짐 방지). `content-disposition: attachment`.
 - ★ **사번(emp_no)은 CSV에만 포함한다**(운영자 확정, T11 — 포상·행정 대조용). 화면 API에는 싣지 않는다.
   내려받은 파일의 보관·폐기 책임은 운영자에게 있다.

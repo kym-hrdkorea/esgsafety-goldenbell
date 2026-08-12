@@ -14,6 +14,7 @@ const KINDS = [
   "scores", // 회차별 점수·포인트
   "items", // 문항 통계 (P·D)
   "matched", // 동일인 사전·사후 대조
+  "outcomes", // 12쌍 완전대응 성과 요약
   "heatmap", // 소속 × 영역 히트맵
   "participation", // 참여 지표
 ] as const;
@@ -155,6 +156,65 @@ async function buildCsv(kind: Kind): Promise<string> {
           r.post_pct,
           r.gain_pp,
         ])
+      );
+    }
+
+    case "outcomes": {
+      const [summaryRes, pairs, anchors, transfers] = await Promise.all([
+        db
+          .from("v_matched_summary")
+          .select(
+            "matched_n, pair_count, pre_avg_pct, post_avg_pct, mean_gain_pp, median_gain_pp, improved_n, improved_pct"
+          )
+          .maybeSingle(),
+        fetchAll((from, to) =>
+          db
+            .from("v_measure_pair_stats")
+            .select("measure_code, pre_item_code, post_item_code, n, pre_pct, post_pct, gain_pp")
+            .order("measure_code")
+            .range(from, to)
+        ),
+        fetchAll((from, to) =>
+          db
+            .from("v_anchor_trend")
+            .select("round_no, anchor_code, n, pct")
+            .order("anchor_code")
+            .order("round_no")
+            .range(from, to)
+        ),
+        fetchAll((from, to) =>
+          db
+            .from("v_transfer_outcome_stats")
+            .select("measure_code, item_code, round_no, n, pct")
+            .order("measure_code")
+            .range(from, to)
+        ),
+      ]);
+      if (summaryRes.error) throw new Error(summaryRes.error.message);
+      const s = summaryRes.data;
+      const rows: unknown[][] = [
+        ["요약", "matchedN", "", "", "", s?.matched_n ?? "", "", "", "", "", "12쌍을 모두 확정한 동일인 수"],
+        ["요약", "pairCount", "", "", "", s?.pair_count ?? 12, "", "", "", "", "사전·사후 측정 문항쌍 수"],
+        ["요약", "preAvgPct", "", "", "", "", s?.pre_avg_pct ?? "", "", "", "", "완전대응 표본의 사전 평균 정답률"],
+        ["요약", "postAvgPct", "", "", "", "", "", s?.post_avg_pct ?? "", "", "", "완전대응 표본의 사후 평균 정답률"],
+        ["요약", "meanGainPp", "", "", "", "", "", "", s?.mean_gain_pp ?? "", "", "참가자별 향상폭의 평균"],
+        ["요약", "medianGainPp", "", "", "", "", "", "", s?.median_gain_pp ?? "", "", "참가자별 향상폭의 중앙값"],
+        ["요약", "improvedN", "", "", "", s?.improved_n ?? "", "", "", "", "", "사전 대비 사후 향상폭이 0보다 큰 사람 수"],
+        ["요약", "improvedPct", "", "", "", "", "", "", "", s?.improved_pct ?? "", "향상자 수 ÷ 대응 표본 수"],
+        ...pairs.map((r) => [
+          "문항쌍", r.measure_code, r.pre_item_code, r.post_item_code, "", r.n,
+          r.pre_pct ?? "", r.post_pct ?? "", r.gain_pp ?? "", "", "완전대응 참가자 기준",
+        ]),
+        ...anchors.map((r) => [
+          "앵커", r.anchor_code, "", "", r.round_no, r.n, "", "", "", r.pct ?? "", "회차 완료·만료 세션의 확정 응답 기준",
+        ]),
+        ...transfers.map((r) => [
+          "전이", r.measure_code, r.item_code, "", r.round_no, r.n, "", "", "", r.pct ?? "", "회차 완료·만료 세션의 확정 응답 기준",
+        ]),
+      ];
+      return toCsv(
+        ["구분", "코드", "사전 문항", "사후 문항", "회차", "n", "사전 정답률(%)", "사후 정답률(%)", "향상폭(pp)", "정답률(%)", "산식·범위"],
+        rows
       );
     }
 

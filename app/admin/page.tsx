@@ -18,6 +18,22 @@ type Matched = {
 };
 type Heat = { orgUnitName: string; category: string; n: number; pct: number };
 type PrelearnEffect = { roundNo: number; viewed: boolean; n: number; avgPct: number };
+type OutcomeSummary = {
+  matchedN: number; pairCount: number; preAvgPct: number | null; postAvgPct: number | null;
+  meanGainPp: number | null; medianGainPp: number | null; improvedN: number; improvedPct: number | null;
+};
+type OutcomePair = {
+  measureCode: string; preItemCode: string | null; postItemCode: string | null; n: number;
+  prePct: number | null; postPct: number | null; gainPp: number | null;
+};
+type OutcomeAnchor = { roundNo: number; anchorCode: string; n: number; pct: number | null };
+type OutcomeTransfer = { measureCode: string; itemCode: string; roundNo: number; n: number; pct: number | null };
+type Outcomes = {
+  summary: OutcomeSummary;
+  pairs: OutcomePair[];
+  anchors: OutcomeAnchor[];
+  transfers: OutcomeTransfer[];
+};
 type ShortRow = { itemCode: string; roundNo: number | null; nickname: string; submitted: string; answeredAt: string };
 type RoundStatus = {
   roundNo: number; season: number; theme: string;
@@ -42,6 +58,7 @@ const EXPORTS: { kind: string; label: string }[] = [
   { kind: "scores", label: "회차별 점수" },
   { kind: "items", label: "문항 통계" },
   { kind: "matched", label: "동일인 대조" },
+  { kind: "outcomes", label: "성과 요약" },
   { kind: "heatmap", label: "히트맵" },
   { kind: "participation", label: "참여 지표" },
 ];
@@ -49,6 +66,14 @@ const EXPORTS: { kind: string; label: string }[] = [
 const TH = "px-2.5 py-1.5 text-left text-[12px] font-extrabold tracking-[0.06em] text-gb-text-secondary";
 const TD = "px-2.5 py-1.5 text-[13px] text-gb-text-primary";
 const NUM = "font-gb-num tabular-nums";
+
+function metric(value: number | null, suffix = "") {
+  return value === null ? "-" : `${value}${suffix}`;
+}
+
+function gain(value: number | null) {
+  return value === null ? "-" : `${value > 0 ? "+" : ""}${value}`;
+}
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
@@ -77,6 +102,7 @@ export default function AdminPage() {
   const [participation, setParticipation] = useState<Participation[]>([]);
   const [items, setItems] = useState<ItemStat[]>([]);
   const [matched, setMatched] = useState<Matched[]>([]);
+  const [outcomes, setOutcomes] = useState<Outcomes | null>(null);
   const [heatmap, setHeatmap] = useState<Heat[]>([]);
   const [prelearn, setPrelearn] = useState<PrelearnEffect[]>([]);
   const [shorts, setShorts] = useState<ShortRow[]>([]);
@@ -88,6 +114,7 @@ export default function AdminPage() {
       "/api/admin/stats/participation",
       "/api/admin/stats/items",
       "/api/admin/stats/matched",
+      "/api/admin/stats/outcomes",
       "/api/admin/stats/heatmap",
       "/api/admin/stats/prelearning",
       "/api/admin/short-unmatched",
@@ -103,11 +130,12 @@ export default function AdminPage() {
       return;
     }
     // ★ paths 순서와 아래 구조분해 순서가 1:1로 맞아야 한다
-    const [ro, pa, it, ma, he, pl, sh] = await Promise.all(results.map((r) => r.json()));
+    const [ro, pa, it, ma, ou, he, pl, sh] = await Promise.all(results.map((r) => r.json()));
     setRounds(ro);
     setParticipation(pa);
     setItems(it);
     setMatched(ma);
+    setOutcomes(ou);
     setHeatmap(he);
     setPrelearn(pl);
     setShorts(sh);
@@ -320,6 +348,112 @@ export default function AdminPage() {
               </tbody>
             </table>
           </div>
+        )}
+      </Section>
+
+      <Section title="핵심 성과지표 (12쌍 완전대응)">
+        {!outcomes ? (
+          <Empty />
+        ) : (
+          <>
+            <p className="m-0 text-[12px] leading-5 text-gb-text-secondary">
+              사전·사후 M01~M12를 모두 확정한 동일인만 1차 KPI에 포함합니다. 시간초과는 오답으로 계산하며,
+              사전학습 열람 효과는 인과효과가 아닌 열람자·미열람자 간 연관지표입니다.
+            </p>
+            <div className="grid grid-cols-2 gap-2.5 md:grid-cols-4">
+              {[
+                ["대응 표본 N", `${outcomes.summary.matchedN}`],
+                ["문항쌍", `${outcomes.summary.pairCount}쌍`],
+                ["사전 평균", metric(outcomes.summary.preAvgPct, "%")],
+                ["사후 평균", metric(outcomes.summary.postAvgPct, "%")],
+                ["평균 향상", gain(outcomes.summary.meanGainPp) + (outcomes.summary.meanGainPp === null ? "" : "pp")],
+                ["중앙 향상", gain(outcomes.summary.medianGainPp) + (outcomes.summary.medianGainPp === null ? "" : "pp")],
+                ["향상자", `${outcomes.summary.improvedN}명`],
+                ["향상자 비율", metric(outcomes.summary.improvedPct, "%")],
+              ].map(([label, value]) => (
+                <div key={label} className="flex flex-col gap-1 rounded border-[3px] border-gb-border-card bg-gb-bg-panel px-3.5 py-3">
+                  <div className="text-[12px] font-bold text-gb-text-secondary">{label}</div>
+                  <div className={`${NUM} text-[20px] font-bold text-gb-yellow`}>{value}</div>
+                </div>
+              ))}
+            </div>
+
+            <div className="overflow-auto rounded border-[3px] border-gb-border-divider">
+              <table className="w-full min-w-[620px] border-collapse">
+                <thead className="bg-gb-bg-panel">
+                  <tr>
+                    <th className={TH}>쌍</th>
+                    <th className={TH}>사전 문항</th>
+                    <th className={TH}>사후 문항</th>
+                    <th className={TH}>n</th>
+                    <th className={TH}>사전(%)</th>
+                    <th className={TH}>사후(%)</th>
+                    <th className={TH}>향상(pp)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {outcomes.pairs.map((p) => (
+                    <tr key={p.measureCode} className="border-t-2 border-gb-border-row">
+                      <td className={`${TD} ${NUM}`}>{p.measureCode}</td>
+                      <td className={`${TD} ${NUM}`}>{p.preItemCode ?? "-"}</td>
+                      <td className={`${TD} ${NUM}`}>{p.postItemCode ?? "-"}</td>
+                      <td className={`${TD} ${NUM}`}>{p.n}</td>
+                      <td className={`${TD} ${NUM}`}>{metric(p.prePct, "%")}</td>
+                      <td className={`${TD} ${NUM}`}>{metric(p.postPct, "%")}</td>
+                      <td className={`${TD} ${NUM}`}>{gain(p.gainPp)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="grid gap-5 md:grid-cols-2">
+              <div className="overflow-auto rounded border-[3px] border-gb-border-divider">
+                <table className="w-full min-w-[360px] border-collapse">
+                  <thead className="bg-gb-bg-panel">
+                    <tr>
+                      <th className={TH}>회차</th>
+                      <th className={TH}>앵커</th>
+                      <th className={TH}>n</th>
+                      <th className={TH}>정답률(%)</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {outcomes.anchors.map((a) => (
+                      <tr key={`${a.roundNo}-${a.anchorCode}`} className="border-t-2 border-gb-border-row">
+                        <td className={`${TD} ${NUM}`}>{a.roundNo}</td>
+                        <td className={TD}>{a.anchorCode}</td>
+                        <td className={`${TD} ${NUM}`}>{a.n}</td>
+                        <td className={`${TD} ${NUM}`}>{metric(a.pct, "%")}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <div className="overflow-auto rounded border-[3px] border-gb-border-divider">
+                <table className="w-full min-w-[360px] border-collapse">
+                  <thead className="bg-gb-bg-panel">
+                    <tr>
+                      <th className={TH}>전이</th>
+                      <th className={TH}>문항</th>
+                      <th className={TH}>n</th>
+                      <th className={TH}>정답률(%)</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {outcomes.transfers.map((t) => (
+                      <tr key={t.measureCode} className="border-t-2 border-gb-border-row">
+                        <td className={TD}>{t.measureCode}</td>
+                        <td className={`${TD} ${NUM}`}>{t.itemCode}</td>
+                        <td className={`${TD} ${NUM}`}>{t.n}</td>
+                        <td className={`${TD} ${NUM}`}>{metric(t.pct, "%")}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </>
         )}
       </Section>
 

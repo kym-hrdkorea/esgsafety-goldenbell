@@ -21,17 +21,20 @@ db/
   02_seed_org.sql          소속 50개 / 부서 193개  [자동생성]
   03_seed_rounds.sql       회차 6개  ※ 확정 일정 반영
   04_seed_items.sql        문항 72개  [자동생성]
-  05_views.sql             순위 5종 + 성과분석 7종 뷰
+  05_views.sql             순위·점수·성과분석 뷰
   06_seed_prelearning.sql  사전학습 본문 6건  [자동생성]
   items.json               문항 원본 JSON (참조용)
   prelearning.json         사전학습 원본 JSON (참조용)
+  validate-items.mjs       문항은행 자동검증
+  validate-prelearning.mjs 사전학습 자동검증
+  validate-outcomes.mjs    성과측정 계약·산식 자동검증
 
 spec/
   functional-spec.md       기능 명세 + 만들지 않는 것
   business-rules.md        채점·타이머·순위 규칙 ★★ 가장 중요
   decisions-addendum.md    확정 결정 A~M·G-1~G-3·N·O ★ B·C·D·E·F·K항은 이 문서에만 있다
-  api-contract.md          API 계약 (24개 엔드포인트)
-  test-scenarios.md        테스트 케이스 50여 건
+  api-contract.md          API 계약 (관리자 성과 API 포함)
+  test-scenarios.md        테스트 케이스 60여 건
   legal-sources.md         T17 법령·수치 문항 근거
 
 design/
@@ -72,7 +75,7 @@ pnpm dev                       # http://localhost:3000
 ### 수동 이관 — `.env.local` (git에 없다. 이게 유일한 필수 작업)
 
 비밀값이라 저장소에 올리지 않는다(`.gitignore`의 `.env*.local`).
-**실제로 옮겨야 하는 건 Supabase 2개뿐이다.**
+**개발을 이어받을 때 우선 옮길 값은 Supabase 2개뿐이다.** 관리자 초기값은 T22 운영 설정에서 한 번만 사용하고 삭제한다.
 
 | 키 | 신규 PC에서 | 어디서 얻나 |
 |---|---|---|
@@ -81,8 +84,8 @@ pnpm dev                       # http://localhost:3000
 | `SESSION_SECRET` | 새로 생성해도 무해 | 아래 생성 명령 |
 | `CRON_SECRET` | 새로 생성해도 무해 | 아래 생성 명령 |
 | `TZ` | `Asia/Seoul` 직접 입력 | — |
-| `ADMIN_LOGIN_ID` | **옮기지 않는다** | 시딩 완료됨(`admin_user` 1행) |
-| `ADMIN_INIT_PASSWORD` | **옮기지 않는다** | 위와 동일. 남겨두면 재시딩 경로가 열린 채 유지된다 |
+| `ADMIN_LOGIN_ID` | T22 초기 관리자 시딩 때만 필요 | Vercel 서버 환경변수에 직접 입력 |
+| `ADMIN_INIT_PASSWORD` | T22 초기 관리자 시딩 때만 필요 | 시딩 성공 직후 환경변수에서 삭제 |
 
 비밀값 생성 (Windows에 `openssl`이 없을 수 있으므로 Node 쪽이 확실하다)
 ```bash
@@ -117,8 +120,9 @@ git log --oneline -3        # c9e4660 feat: T13 ... 이 최상단이어야 한�
 pnpm typecheck              # 무출력 = 정상
 ```
 
-DB는 원격 Supabase를 공유하므로 별도 구축이 필요 없다. 현재 참가자 0명·전 회차 locked이며,
-`db/*.sql`을 **다시 실행하지 않는다**(`CLAUDE.md` 규칙 9-1: DDL·시드 재적재 금지).
+DB는 원격 Supabase를 공유한다. 현재는 사용자가 public 테이블을 초기화해 참가자·응시·문항·회차·조직·설정·관리자 데이터가 비어 있다.
+T21에서 백업·행 수를 먼저 확인하고 사용자 승인을 받은 뒤에만 위 SQL을 순서대로 실행한다.
+T21 전에는 `db/*.sql`을 임의로 실행하지 않는다(`CLAUDE.md` 규칙 9-1).
 
 ## 진행 순서
 
@@ -138,6 +142,9 @@ SELECT count(*) FROM department;  -- 193
 SELECT count(*) FROM quiz_item;   -- 72
 SELECT item_type, count(*) FROM quiz_item GROUP BY 1;
 -- MC4 55 / OX 14 / ORDER 2 / SHORT 1
+SELECT measure_code, count(*) FROM quiz_item
+ WHERE measure_code IS NOT NULL GROUP BY 1 ORDER BY 1;
+-- M01~M12, M01P~M12P, T01~T04 각 1행
 ```
 
 ### 1단계 — 설계 검증 (Codex, 1시간)
@@ -158,6 +165,13 @@ T00부터 카드 단위로, 하나 끝날 때마다 확인.
 
 ### 5단계 — 부하 테스트 및 개시 (T12)
 동시 100 VU, 오류율 0%, p95 < 500ms 확인 후 개시.
+
+성과측정 로컬 검증:
+```bash
+node db/validate-items.mjs
+node db/validate-prelearning.mjs
+node db/validate-outcomes.mjs
+```
 
 ## 개시 전 반드시 확인
 - [x] `03_seed_rounds.sql` 실제 일정 반영, `is_published` 운영 전환 절차 확정
