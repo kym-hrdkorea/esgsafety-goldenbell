@@ -13,6 +13,7 @@
     "test:sessions": "node db/validate-session-functions.mjs",
     "test:admin": "node --test lib/admin.test.ts",
     "test:t20": "node db/validate-t20.mjs",
+    "test:t21": "node --env-file=.env.local db/verify-t21.mjs",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

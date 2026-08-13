@@ -30,6 +30,9 @@ db/
   validate-prelearning.mjs 사전학습 자동검증
   validate-outcomes.mjs    성과측정 계약·산식 자동검증
   validate-session-functions.mjs 세션 원자성·복구·만료 자동검증
+  t21-snapshot.mjs         Supabase 읽기 전용 행 수·데이터 스냅샷
+  build-t21-migration.mjs  01~07 SQL을 보호된 단일 트랜잭션으로 조립
+  verify-t21.mjs           T21 적용 후 실DB 계약 자동검증
 
 spec/
   functional-spec.md       기능 명세 + 만들지 않는 것
@@ -118,22 +121,22 @@ cron 라우트는 자기 환경변수와만 대조한다. **덕분에 채널로 
 ### 이어받은 직후 상태 확인
 
 ```bash
-git log --oneline -3        # c9e4660 feat: T13 ... 이 최상단이어야 한다
+git log --oneline -3        # 최신 카드 커밋은 tasks/continuation-plan.md와 대조
 pnpm typecheck              # 무출력 = 정상
 ```
 
-DB는 원격 Supabase를 공유한다. 현재는 사용자가 public 테이블을 초기화해 참가자·응시·문항·회차·조직·설정·관리자 데이터가 비어 있다.
-T21에서 백업·행 수를 먼저 확인하고 사용자 승인을 받은 뒤에만 위 SQL을 순서대로 실행한다.
-T21 전에는 `db/*.sql`을 임의로 실행하지 않는다(`CLAUDE.md` 규칙 9-1).
+DB는 원격 Supabase를 공유한다. T21에서 사용자 승인 아래 2026-08-13에 6회차 스키마·조직·72문항·사전학습·뷰·세션 함수를 적용했다.
+현재 참가자·응시·응답·관리자 데이터는 0행이며, 여섯 회차는 개시 전 보호를 위해 모두 `is_published=false`다.
+재적용 전에는 `db/t21-snapshot.mjs`로 백업·행 수를 확인하고, 데이터가 있으면 자동 초기화하지 않는다(`CLAUDE.md` 규칙 9-1).
 
 ## 진행 순서
 
 ### 0단계 — DB 구축 (30분)
-Supabase 프로젝트 생성 후 SQL Editor에서 순서대로 실행.
+새 Supabase 프로젝트는 SQL Editor에서 아래 순서로 구축한다.
 ```
 01_schema.sql → 02_seed_org.sql → 03_seed_rounds.sql → 04_seed_items.sql → 05_views.sql → 06_seed_prelearning.sql → 07_session_functions.sql
 ```
-`07_session_functions.sql`은 T19 코드가 사용하는 서버 전용 RPC다. T21의 백업·행 수 확인과 별도 승인 전에는 Supabase에서 실행하지 않는다.
+기존 프로젝트를 재구축할 때는 백업·0행 확인 후 `build-t21-migration.mjs`로 보호된 단일 트랜잭션을 생성한다. T21 실DB에는 `07_session_functions.sql`까지 적용돼 있다.
 `03_seed_rounds.sql`의 `opens_at`/`closes_at`은 **확정 일정**이다(2026-08-17 개시, 6회차 09/25 마감).
 실DB와 항상 정합해야 하며, 일정이 바뀌면 시드 재실행이 아니라 6행 절대값 UPDATE로 조정하고
 이 파일도 같은 값으로 함께 고친다.
@@ -177,12 +180,16 @@ node db/validate-outcomes.mjs
 node db/validate-session-functions.mjs
 node db/validate-t20.mjs
 npm.cmd run test:admin
+# T21: 비밀값은 출력하지 않고 .env.local에서만 읽는다. 저장 경로는 Git 밖으로 지정한다.
+node --env-file=.env.local db/t21-snapshot.mjs --include-data --out <백업_폴더_절대경로>
+npm.cmd run test:t21
 ```
 
 ## 개시 전 반드시 확인
 - [x] `03_seed_rounds.sql` 실제 일정 반영, `is_published` 운영 전환 절차 확정
 - [x] 사전학습 본문 6건 작성 후 `06_seed_prelearning.sql`로 `quiz_round.prelearning_body` UPDATE
-- [ ] A2 앵커 8문항(안전신문고 관련)을 실제 신고 화면·절차와 대조 검수
+- [x] T21 Supabase 6회차·72문항·뷰 16개·세션 RPC 3개 적용 및 실DB 검증
+- [ ] A2 앵커 6문항(안전신문고 관련)을 실제 신고 화면·절차와 대조 검수
 - [x] 법령 시점 재확인: 2-04, 2-08, 4-09, 6-03, 6-07, 6-11
 - [ ] 파일럿 응시 5~10명, 회차 평균 정답률 70~75% 구간 확인
 - [ ] 관리자 계정 시딩 후 `ADMIN_INIT_PASSWORD` 환경변수 삭제
@@ -192,6 +199,4 @@ npm.cmd run test:admin
 ## 미결 사항
 | 항목 | 필요 시점 |
 |---|---|
-| 캠페인 시작일 확정 | DB 구축 시 |
-| 사전학습 자료 6건 본문 | 1회차 개방 전 |
 | 포상 인원·금액 확정 | 계획서 결재 시 |
