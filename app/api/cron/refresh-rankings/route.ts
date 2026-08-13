@@ -4,6 +4,7 @@ import { getConfigValue } from "@/lib/config";
 import { apiError } from "@/lib/quiz";
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 60;
 
 // 순위 뷰 → ranking_snapshot 적재 (business-rules 5.3). 대시보드는 snapshot만 읽는다.
 // 60초는 5.3이 고정한 스펙 상수다(운영 파라미터 아님). F항에 따라 org_unit도 적재한다.

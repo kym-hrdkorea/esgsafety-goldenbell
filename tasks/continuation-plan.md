@@ -9,7 +9,7 @@
 | 항목 | 상태 |
 |---|---|
 | 기준 브랜치 | `main` |
-| 기준 커밋 | T20 완료 `e265a60 feat: T20 순위·관리자·사용성 잔여 개선`; T21 변경은 이 카드의 단일 로컬 커밋 |
+| 기준 커밋 | T22 완료 단일 커밋 `feat: T22 Vercel·Supabase 운영 설정` |
 | T00~T13 | 기존 구현 완료. T12 부하 테스트 증적은 미완료 |
 | T14 계획 고정 | 완료 |
 | T16 6회차 개편 | 완료 |
@@ -17,11 +17,12 @@
 | T19 세션·완료 처리 안정화 | 완료 — 원자 세션 RPC·점수 재조정·복구·만료·Cron 전량 페이지네이션 |
 | T20 순위·관리자·사용성 개선 | 완료 — 종료 회차 순위·CSV 안전성·대용량 조회·경계 UI 개선 |
 | T21 Supabase 마이그레이션 | 완료 — 6회차·72문항·사전학습·뷰 16개·세션 RPC 3개 실DB 적용 |
-| 다음 카드 | T22 — Vercel·Supabase 운영 설정 (사용자 확인 후 착수) |
+| T22 Vercel·Supabase 운영 설정 | 완료 — 양쪽 Pro 확인·서울 리전·Cron 2건·관리자 1회 시딩·Production 배포 |
+| 다음 카드 | T23 — 통합·파일럿·부하 테스트와 개시 (사용자 확인 후 착수) |
 | 운영 일정 | 2026-08-17 시작 ~ 2026-09-25 종료, 월~금 KST |
 | 목표 규모 | 6회차 × 12문항 = 72문항 |
-| Supabase 연결 | 정상. 조직 4/50/193, 회차 6, 문항 72 적용. 참가자·응시·응답·관리자 0행, 전 회차 비공개 |
-| 마지막 검증 | T21 실DB 계약·제약·뷰·RPC·`/api/health` 200, 기존 검증기·타입검사 통과 |
+| Supabase 연결 | 정상. 조직 4/50/193, 회차 6, 문항 72 적용. 참가자·응시·응답·열람 0행, 빈 순위 스냅샷 4행, 관리자 1행, 전 회차 비공개 |
+| 마지막 검증 | T22 정적검사·타입검사·33개 단위 테스트·전체 검증기·빌드·실DB 계약·Production 헬스·Cron 인증/실행 통과 |
 
 ## 확정 운영·측정 기준
 
@@ -108,7 +109,7 @@
 
 검증 결과:
 
-- `.env.local`의 `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `SESSION_SECRET`, `CRON_SECRET`, `ADMIN_LOGIN_ID`, `ADMIN_INIT_PASSWORD`, `TZ`가 모두 입력되어 있고, `.env.local`은 Git 추적에서 제외되어 있다.
+- T15 당시 `.env.local`의 필수값과 `TZ`를 입력했고 Git 추적 제외를 확인했다. T22에서 Vercel 예약명임을 확인한 뒤 `TZ` 의존성을 제거하고 명시적 KST 변환을 검증한다.
 - 서버 전용 키를 화면에 출력하지 않고 Supabase REST를 읽기 전용 호출했다. `org_category`, `org_unit`, `department`, `app_config`, `quiz_round`, `quiz_item`, `participant`, `quiz_session`, `quiz_session_item`, `prelearning_view`, `ranking_snapshot`, `admin_user`가 모두 HTTP 200 및 `Content-Range */0`으로 확인됐다.
 - 로컬 Next.js 서버는 `.env.local`을 읽고 정상 기동했다. `/api/health`는 `app_config`가 초기화되어 0건인 상태에서 `.single()`이 실패하므로 500을 반환한다. 이는 Supabase 연결 실패가 아니라 T16 시드 전의 예상 상태다.
 - 의도한 전체 초기화가 완료되어 활동 데이터가 없으므로 T16 진행 조건을 충족한다. 기존 8회차 SQL은 6회차 개편 전까지 실행하지 않는다.
@@ -211,11 +212,11 @@
 
 완료 조건: 실DB의 6회차·72문항·회차당 12문항·측정 12+12·앵커 2개씩·사전학습 6건·뷰·RPC 검증이 모두 통과했다.
 
-남은 위험: Supabase 조직이 현재 Free 플랜이므로 운영 중 자동 일시정지·자동 백업 부재 위험이 있다. T22에서 운영 플랜과 Vercel Cron 플랜을 확정한다.
+T21 당시의 Free 플랜 위험은 T22에서 Supabase Pro 전환을 확인해 해소했다. 전 회차는 T23 개시 승인 전까지 계속 비공개로 유지한다.
 
-다음 사용자 작업: T22 시작 전 Supabase와 Vercel의 현재 플랜을 확인하되 결제·변경은 안내와 사용자 승인 후 진행한다. 준비되면 `T22 시작 승인`이라고 회신한다.
+다음 사용자 작업: T23의 실DB 통합 테스트·별도 부하 테스트·5~10명 파일럿 범위를 확인하고, 준비되면 `T23 시작 승인`이라고 회신한다.
 
-### T22 — Vercel·Supabase 운영 설정
+### T22 — Vercel·Supabase 운영 설정 — 완료
 
 사용자 Dashboard 접근이 필요한 카드다.
 
@@ -224,16 +225,40 @@
 - Vercel 환경변수는 서버 전용으로 등록하고, 관리자 초기 시딩 후 `ADMIN_INIT_PASSWORD`를 제거한다.
 - 매분 Cron은 Vercel Pro를 전제로 한다. Hobby는 하루 1회 제한이 있으므로 플랜이 다르면 개시 전에 운영 방식을 결정한다.
 
-#### T21·T22에서 사용자가 할 일 — 초보자용 예고
+#### T22 완료 기록 — 운영 플랜·배포·관리자 설정
 
-1. **왜 필요한가:** T21은 실제 DB에 6회차 시드·뷰·사전학습을 반영하는 작업이고, T22는 서비스 중단·Cron 누락·관리자 초기 비밀번호 잔존 위험을 줄이는 운영 설정이다. 이 작업 전까지 로컬 파일만 바뀌며 실DB는 비어 있는 상태를 유지한다.
-2. **Supabase 경로:** Supabase Dashboard → 해당 프로젝트 → **Settings → Billing**에서 운영 플랜과 자동 백업·일시정지 조건을 확인한다. 이어 **SQL Editor**에서 T21이 제공하는 백업·행 수 확인 SQL을 먼저 실행한다.
-3. **Vercel 경로:** Vercel Dashboard → 프로젝트 → **Settings → Environment Variables**에서 서버 전용 변수를 등록하고, **Settings → Functions**에서 리전을 `icn1`로 확인한다. `vercel.json`의 Cron·함수 시간 설정은 T22에서 파일과 화면을 함께 맞춘다.
-4. **입력할 값:** `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `SESSION_SECRET`, `CRON_SECRET`, `ADMIN_LOGIN_ID`, `ADMIN_INIT_PASSWORD`는 각각 이름만 확인하고 비밀값은 로컬 파일·Vercel 입력란에 직접 붙여넣는다. `ADMIN_INIT_PASSWORD`는 최초 관리자 시딩 성공 후 삭제한다.
-5. **보안 주의:** service role 키·세션 비밀값·초기 관리자 비밀번호를 채팅, Git, 스크린샷, 이메일에 보내지 않는다.
-6. **정상 결과:** T21 검증 쿼리에서 `quiz_round=6`, `quiz_item=72`, 회차당 문항 `12`, 측정 `12+12`, 앵커 회차당 `2`, 본문 `6`이 확인되고, T22에서는 Cron 최근 실행 성공·관리자 로그인·`/api/health` 정상 응답을 확인한다.
-7. **실패 시 되돌리기:** T21은 사용자 승인 전 실행하지 않으며, 실패하면 추가 SQL을 실행하지 않고 오류 화면·실행한 SQL·행 수만 보존한다. T22는 잘못 입력한 환경변수를 수정·삭제하고 Cron을 수동 재실행한다.
-8. **회신 문구:** 해당 카드가 시작되면 안내한 작업을 끝낸 뒤 `T21 백업·행 수 확인 완료` 또는 `T22 운영 설정 완료`라고 회신한다. 비밀값 자체는 회신하지 않는다.
+- Supabase 프로젝트 리전은 `ap-northeast-2`(Northeast Asia, Seoul)이며, 조직 이름 옆 `Pro`와 Billing의 `Pro Plan`을 확인했다. Spend Cap은 켜진 상태다.
+- `vercel.json`에 서울 `icn1`, 순위 갱신 매분, 세션 만료 5분 주기를 고정했다.
+- 두 Cron Route Handler에 `maxDuration=60`을 추가하고 기존 Bearer 인증 fail-closed 동작을 자동검사한다.
+- Vercel Dashboard 재로그인을 확인했다. 기존 `esgsafety-goldenbell` 프로젝트가 GitHub 저장소와 연결되어 있고 Production 도메인은 `esgsafety-goldenbell.vercel.app`이다.
+- Vercel 팀 이름 옆 `Pro`를 확인했다. `vercel.json`의 `regions: ["icn1"]`을 새 Production 배포에 적용해 Supabase 서울 리전과 맞췄다.
+- Vercel에는 `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `SESSION_SECRET`, `CRON_SECRET` 네 서버 전용 환경변수가 Sensitive로 등록되어 있다. 관리자 초기 환경변수는 Vercel에 없다.
+- Vercel은 `TZ` 이름을 예약 환경변수로 거부한다. 회차 시각은 `+09`, 화면·CSV는 `timeZone: "Asia/Seoul"`을 명시하며 T22 검사기가 이 계약을 확인하므로 별도 `TZ` 변수는 등록하지 않는다.
+- 사용자의 GitHub push 승인에 따라 T22 단일 커밋을 `main`에 반영했고, 연결된 Vercel 프로젝트의 새 Production 배포·`/api/health`·Cron 2건을 확인했다.
+- 순위 Cron 첫 실행은 참가자가 없어도 빈 payload의 기준 스냅샷 4개를 생성한다. 실DB 검증기는 첫 실행 전 0개 또는 정확한 기준 4개만 허용하고, 참가자 payload나 회차 스냅샷은 개시 전 실패로 처리한다.
+- 사용자가 `ADMIN_INIT_PASSWORD`를 권장 기준인 16자 이상으로 재작성했고, 비밀값 자체는 출력하지 않고 길이만 확인했다.
+- 로컬 앱의 실제 관리자 로그인 API를 두 번 호출해 모두 HTTP 200을 확인했다. 실DB `admin_user`는 중복 없이 정확히 1행이다.
+- 시딩 성공 직후 `.env.local`의 `ADMIN_LOGIN_ID`와 `ADMIN_INIT_PASSWORD` 값을 비웠다. 운영 관리자 비밀번호는 사용자의 비밀번호 관리자에만 남는다.
+- 관리자 시딩 코드에도 12자 최소 조건을 추가해 약한 초기 비밀번호로는 계정을 생성하지 않는다.
+- Vercel·Supabase 모두 Pro 전환이 확인되어 T22의 플랜 차단 조건은 해소됐다. 추가 유료 add-on은 이 카드에서 변경하지 않았다.
+
+#### T22 사용자 개입 완료 기록
+
+- 사용자가 Vercel·Supabase Pro 구독을 직접 완료했고, 두 대시보드의 Pro 표시를 확인했다.
+- 사용자가 T22 단일 커밋의 GitHub `main` push를 명시적으로 승인했다.
+- 결제정보·서비스 키·비밀번호는 채팅이나 Git에 노출하지 않았다.
+- 잘못된 add-on 추가나 프로젝트 변경은 하지 않았다.
+
+#### T23 시작 전 사용자가 할 일 — 초보자용
+
+1. **왜 필요한가:** T23은 실제 가입·응시·관리자 흐름과 100명 동시 부하를 검증하므로 테스트 데이터 생성과 별도 부하 테스트 환경 사용 범위를 먼저 확정해야 한다.
+2. **접속할 서비스:** 현재는 추가 설정이 필요 없다. T23 승인 후 Codex가 Vercel Production, Supabase 실DB, 별도 테스트 배포의 정확한 경로를 단계별로 안내한다.
+3. **클릭·입력 순서:** T23 착수 전에는 회차 공개 버튼이나 `is_published` 값을 변경하지 않는다. 파일럿 참가자 5~10명에게 전달할 시점은 통합 테스트 통과 후 다시 안내한다.
+4. **준비할 값:** 파일럿에 사용할 테스트 사번·닉네임·소속만 준비한다. 실제 개인정보나 비밀키는 채팅에 올리지 않는다.
+5. **보안 주의:** `SUPABASE_SERVICE_ROLE_KEY`, `SESSION_SECRET`, `CRON_SECRET`, 관리자 비밀번호를 채팅·Git·스크린샷에 올리지 않는다.
+6. **정상 완료 기준:** 가입→로그인→사전학습→12문항→결과→순위→관리자 CSV가 통과하고, 100 VU 오류율 0%·p95 500ms 미만, 파일럿 평균 70~75%를 확인한다.
+7. **실패 시 되돌리기:** 검증 실패 시 전 회차 `is_published=false`를 유지하고 파일럿 데이터를 정리한 뒤 개시일을 재조정한다.
+8. **회신 문구:** T23을 시작하려면 `T23 시작 승인`이라고 회신한다.
 
 ### T23 — 통합·파일럿·부하 테스트와 개시
 

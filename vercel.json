@@ -1,6 +1,8 @@
 {
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "regions": ["icn1"],
   "crons": [
-    { "path": "/api/cron/refresh-rankings", "schedule": "0 15 * * *" },
-    { "path": "/api/cron/expire-sessions", "schedule": "10 15 * * *" }
+    { "path": "/api/cron/refresh-rankings", "schedule": "* * * * *" },
+    { "path": "/api/cron/expire-sessions", "schedule": "*/5 * * * *" }
   ]
 }

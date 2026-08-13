@@ -88,9 +88,8 @@ pnpm dev                       # http://localhost:3000
 | `SUPABASE_SERVICE_ROLE_KEY` | **필수 · 동일해야 함** | 같은 화면 (service_role, `anon` 아님) |
 | `SESSION_SECRET` | 새로 생성해도 무해 | 아래 생성 명령 |
 | `CRON_SECRET` | 새로 생성해도 무해 | 아래 생성 명령 |
-| `TZ` | `Asia/Seoul` 직접 입력 | — |
-| `ADMIN_LOGIN_ID` | T22 초기 관리자 시딩 때만 필요 | Vercel 서버 환경변수에 직접 입력 |
-| `ADMIN_INIT_PASSWORD` | T22 초기 관리자 시딩 때만 필요 | 시딩 성공 직후 환경변수에서 삭제 |
+| `ADMIN_LOGIN_ID` | T22 초기 관리자 시딩 때만 필요 | 로컬에서 1회 시딩 후 삭제 가능 |
+| `ADMIN_INIT_PASSWORD` | T22 초기 관리자 시딩 때만 필요 | 12자 이상, 시딩 성공 직후 삭제 |
 
 비밀값 생성 (Windows에 `openssl`이 없을 수 있으므로 Node 쪽이 확실하다)
 ```bash
@@ -126,7 +125,7 @@ pnpm typecheck              # 무출력 = 정상
 ```
 
 DB는 원격 Supabase를 공유한다. T21에서 사용자 승인 아래 2026-08-13에 6회차 스키마·조직·72문항·사전학습·뷰·세션 함수를 적용했다.
-현재 참가자·응시·응답·관리자 데이터는 0행이며, 여섯 회차는 개시 전 보호를 위해 모두 `is_published=false`다.
+현재 참가자·응시·응답·열람 데이터는 0행, 관리자 계정은 1행이다. 운영 Cron이 빈 순위 기준 스냅샷 4개를 생성했으며, 여섯 회차는 개시 전 보호를 위해 모두 `is_published=false`다.
 재적용 전에는 `db/t21-snapshot.mjs`로 백업·행 수를 확인하고, 데이터가 있으면 자동 초기화하지 않는다(`CLAUDE.md` 규칙 9-1).
 
 ## 진행 순서
@@ -183,7 +182,21 @@ npm.cmd run test:admin
 # T21: 비밀값은 출력하지 않고 .env.local에서만 읽는다. 저장 경로는 Git 밖으로 지정한다.
 node --env-file=.env.local db/t21-snapshot.mjs --include-data --out <백업_폴더_절대경로>
 npm.cmd run test:t21
+npm.cmd run test:t22
 ```
+
+### T22 Vercel 운영 설정
+
+- `vercel.json`은 함수 리전을 서울 `icn1`로 고정한다.
+- 순위 갱신은 `* * * * *`(매분), 세션 만료는 `*/5 * * * *`(5분마다)다.
+- 두 Cron Route Handler는 `maxDuration=60`이고 `CRON_SECRET` Bearer 인증이 없으면 401을 반환한다.
+- 매분 Cron 배포는 Vercel Pro 이상이 필요하다. Hobby에서는 이 일정으로 배포가 실패한다.
+- Production에는 `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `SESSION_SECRET`, `CRON_SECRET`만 계속 보관한다.
+- Vercel은 `TZ`를 예약 환경변수로 거부한다. 이 프로젝트는 회차 시각에 `+09`를 저장하고 모든 화면·CSV에서 `Asia/Seoul`을 명시하므로 `TZ` 환경변수에 의존하지 않는다.
+- 관리자를 로컬에서 먼저 시딩했다면 `ADMIN_LOGIN_ID`와 `ADMIN_INIT_PASSWORD`는 Vercel에 올리지 않는다. Production에서 시딩한 경우 성공 직후 둘 다 삭제하고 다시 배포한다.
+- 환경변수 변경은 기존 배포에 소급되지 않으므로 반드시 새 Production 배포 후 `/api/health`와 Cron을 검증한다.
+- 2026-08-13에 Vercel 팀과 Supabase 조직의 Pro 전환을 확인했고, T22 단일 커밋을 `main`에 반영한 새 Production 배포로 운영 설정을 갱신했다.
+- Vercel에는 서버 전용 비밀값 4개가 Sensitive로 등록되어 있다. 관리자 초기 환경변수는 로컬 시딩 후 제거되어 Vercel에 올리지 않는다.
 
 ## 개시 전 반드시 확인
 - [x] `03_seed_rounds.sql` 실제 일정 반영, `is_published` 운영 전환 절차 확정
@@ -192,8 +205,8 @@ npm.cmd run test:t21
 - [ ] A2 앵커 6문항(안전신문고 관련)을 실제 신고 화면·절차와 대조 검수
 - [x] 법령 시점 재확인: 2-04, 2-08, 4-09, 6-03, 6-07, 6-11
 - [ ] 파일럿 응시 5~10명, 회차 평균 정답률 70~75% 구간 확인
-- [ ] 관리자 계정 시딩 후 `ADMIN_INIT_PASSWORD` 환경변수 삭제
-- [ ] Vercel Cron 2건 등록 (`refresh-rankings`, `expire-sessions`)
+- [x] 관리자 계정 1회 시딩 후 로컬 `ADMIN_LOGIN_ID`·`ADMIN_INIT_PASSWORD` 값 삭제
+- [x] Vercel Cron 2건 등록 (`refresh-rankings`, `expire-sessions`)
 - [ ] 매주 금요일 응답 CSV 수동 백업 절차 확정 (성과 데이터 이중화)
 
 ## 미결 사항

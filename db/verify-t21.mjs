@@ -56,10 +56,34 @@ expect(configN === 14, `app_config=${configN}, 기대값=14`);
 expect(categoryN === 4 && unitN === 50 && departmentN === 193,
   `조직=${categoryN}/${unitN}/${departmentN}, 기대값=4/50/193`);
 expect(
-  [participantN, sessionN, sessionItemN, prelearningViewN, rankingN, adminN]
+  [participantN, sessionN, sessionItemN, prelearningViewN]
     .every((value) => value === 0),
-  "개시 전 활동·관리자 데이터가 0행이 아님"
+  "개시 전 참가자·응시·응답·열람 데이터가 0행이 아님"
 );
+expect(
+  rankingN === 0 || rankingN === 4,
+  `개시 전 순위 스냅샷=${rankingN}, 기대값=첫 Cron 전 0 또는 후 4`
+);
+expect(adminN <= 1, `관리자 계정=${adminN}, 기대값=0 또는 1`);
+
+const rankingRows = await rows("ranking_snapshot", "kind,round_no,payload");
+if (rankingRows.length > 0) {
+  expect(
+    rankingRows
+      .map((row) => row.kind)
+      .sort()
+      .join(",") === "average,department,org_unit,total",
+    "개시 전 순위 스냅샷 종류가 기준 4종과 다름"
+  );
+  expect(
+    rankingRows.every(
+      (row) => row.round_no === null &&
+        Array.isArray(row.payload) &&
+        row.payload.length === 0
+    ),
+    "개시 전 순위 스냅샷에 회차 또는 참가자 payload가 존재함"
+  );
+}
 
 const rounds = await rows(
   "quiz_round",
@@ -165,5 +189,5 @@ expect(minRounds === 0, `개시 전 fn_min_rounds=${minRounds}, 기대값=0`);
 
 console.log("T21 실DB 검증 통과");
 console.log("회차 6 / 문항 72 / 회차당 12 / 측정 12+12 / 앵커 회차당 2 / 사전학습 6");
-console.log("조직 4/50/193 / 활동·관리자 데이터 0 / is_published=false 6");
+console.log(`조직 4/50/193 / 참가자 활동 데이터 0 / 빈 순위 스냅샷 ${rankingN} / 관리자 ${adminN} / is_published=false 6`);
 console.log("성과 요약·문항쌍·참여 뷰 및 fn_min_rounds 정상");

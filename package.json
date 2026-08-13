@@ -14,6 +14,7 @@
     "test:admin": "node --test lib/admin.test.ts",
     "test:t20": "node db/validate-t20.mjs",
     "test:t21": "node --env-file=.env.local db/verify-t21.mjs",
+    "test:t22": "node db/validate-t22.mjs",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

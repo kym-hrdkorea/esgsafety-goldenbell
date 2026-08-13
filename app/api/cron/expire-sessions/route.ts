@@ -5,6 +5,7 @@ import { fetchAll } from "@/lib/admin";
 import { apiError, expireSession, type Session } from "@/lib/quiz";
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 60;
 
 // 방치 세션 주기 정리 (business-rules 3.4). lazy 검사의 보조 장치 —
 // 다시 접근하지 않는 이탈 세션도 여기서 확정되어 순위 집계(F3)에 들어간다.

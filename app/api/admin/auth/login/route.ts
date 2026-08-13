@@ -47,6 +47,9 @@ async function seedIfEmpty(): Promise<void> {
   const loginId = process.env.ADMIN_LOGIN_ID;
   const initPassword = process.env.ADMIN_INIT_PASSWORD;
   if (!loginId || !initPassword) return;
+  if (initPassword.length < 12) {
+    throw new Error("ADMIN_INIT_PASSWORD는 12자 이상이어야 합니다.");
+  }
 
   const db = getDb();
   const { count, error } = await db
