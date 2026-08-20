@@ -1,215 +1,248 @@
-# HRDK 안전 골든벨 퀴즈 리그 — 개발 산출물
+# HRDK 안전 골든벨 퀴즈 리그
 
-2개월 한시 운영 웹앱. Next.js 15 + Supabase + Vercel.
+한국산업인력공단 전 직원(약 1,800명)을 대상으로 6주간 매주 안전 퀴즈를 제공하는 사내 웹 서비스입니다.
+회차마다 12문항을 풀고, 순위와 포상으로 참여를 유도하면서 캠페인 전후의 안전 지식 향상도를 측정합니다.
 
-## 현재 이어받기 기준
+한시 운영이 전제입니다. 두 달 뒤 데이터를 회수하고 프로젝트를 정리하는 것까지 범위에 들어 있어서,
+기능을 넓히기보다 **정해진 규칙을 정확히 지키는 쪽**에 무게를 두고 만들었습니다.
 
-6회차 전환과 이후 순차 개발은 [`tasks/continuation-plan.md`](tasks/continuation-plan.md)를 단일 기준으로 사용한다.
-운영 목표는 2026-08-17~2026-09-25, 6회차, 회차당 12문항, 총 72문항이다.
-사용자 설정이 필요한 단계에서는 계획 파일의 초보자용 지침을 먼저 수행하고, 실제 비밀값은 채팅이나 GitHub에 공유하지 않는다.
+## 어떻게 돌아가는가
 
-## 파일 구성
-
-```
-README.md                  ← 이 문서 (사용 순서)
-CLAUDE.md                  Claude Code 프로젝트 규칙 ★ 리포 루트에 배치
-AGENTS.md                  Codex 검증 역할 정의   ★ 리포 루트에 배치
-decisions.md               확정 의사결정 24건 + 정정 이력
-
-db/
-  01_schema.sql            스키마 DDL (12개 테이블)
-  02_seed_org.sql          소속 50개 / 부서 193개  [자동생성]
-  03_seed_rounds.sql       회차 6개  ※ 확정 일정 반영
-  04_seed_items.sql        문항 72개  [자동생성]
-  05_views.sql             순위·점수·성과분석 뷰
-  06_seed_prelearning.sql  사전학습 본문 6건  [자동생성]
-  07_session_functions.sql 세션 원자 생성·점수 복구·만료 함수 (T19, T21 적용)
-  items.json               문항 원본 JSON (참조용)
-  prelearning.json         사전학습 원본 JSON (참조용)
-  validate-items.mjs       문항은행 자동검증
-  validate-prelearning.mjs 사전학습 자동검증
-  validate-outcomes.mjs    성과측정 계약·산식 자동검증
-  validate-session-functions.mjs 세션 원자성·복구·만료 자동검증
-  t21-snapshot.mjs         Supabase 읽기 전용 행 수·데이터 스냅샷
-  build-t21-migration.mjs  01~07 SQL을 보호된 단일 트랜잭션으로 조립
-  verify-t21.mjs           T21 적용 후 실DB 계약 자동검증
-
-spec/
-  functional-spec.md       기능 명세 + 만들지 않는 것
-  business-rules.md        채점·타이머·순위 규칙 ★★ 가장 중요
-  decisions-addendum.md    확정 결정 A~M·G-1~G-3·N·O ★ B·C·D·E·F·K항은 이 문서에만 있다
-  api-contract.md          API 계약 (관리자 성과 API 포함)
-  test-scenarios.md        테스트 케이스 60여 건
-  legal-sources.md         T17 법령·수치 문항 근거
-
-design/
-  1_claude-design.md       Claude Design 전달 프롬프트 (톤·가드레일 원본)
-  design-brief.md          Claude Design 브리프
-  copy.md                  화면 문안 (확정) — 규칙 9의 유일 출처
-  screens.md               라우트 + 플로우 + 상태
-  sample-items.md          문항 샘플 (디자인 검토용)
-  handoff.md               디자인 → 구현 핸드오프
-  tokens.css               색·타이포 토큰
-  mocks/                   확정 목업 11종 (.dc.html)
-
-tasks/
-  tasks.md                 작업 카드 T00~T13 (수직 슬라이스)
-  continuation-plan.md     T14~T24 6회차 전환·연속 개발 단일 계획
-  ux-findings.md           참가자 화면 UI/UX 감사 (A·B절 완료, C절 미해결)
-  code-review-findings.md  전체 코드 리뷰 66건 (2026-08-03)
-prompts/
-  2_codex-review.md        Codex 검증 프롬프트 (설계/코드)
-  claude-code-runbook.md   Claude Code 실행 런북 (P0~P7, P5 감사 12항목)
-.env.example               환경변수 명세
+```mermaid
+flowchart LR
+    A[회원가입<br/>사번·부서·닉네임·휴대폰] --> B[로그인]
+    B --> C[홈<br/>회차 목록]
+    C --> D[사전학습<br/>본문 6카드]
+    C --> E[응시]
+    D --> E
+    E --> F{12문항 반복}
+    F -->|답변 or 45초 초과| G[해설]
+    G --> F
+    F --> H[회차 결과<br/>점수·포인트]
+    H --> I[순위 대시보드]
+    H --> J[내 기록]
+    C --> K[복습<br/>종료 회차만]
 ```
 
-## 새 PC에서 개발 이어받기
+| | |
+|---|---|
+| 회차 구성 | 6회차 × 12문항 = 72문항 |
+| 문항 유형 | 4지선다 55 · O/X 14 · 순서배열 2 · 단답 1 |
+| 개방 시간 | 월 00:00 ~ 금 23:59 (KST) |
+| 제한시간 | 문항당 45초, 초과 시 오답 확정 후 해설 |
+| 응시 기회 | 1인 1회차 1회, 재응시·이어하기 없음 |
+| 순위 | 전체 누적 · 회차별 · 평균 포인트 · 부서 4종 |
+
+성과측정은 사전·사후 12쌍(M01~M12 ↔ M01P~M12P)으로 설계했습니다.
+1~2회차에서 지식을 묻고, 5~6회차에서 같은 지식을 상황 판단으로 다시 묻는 구조입니다.
+12쌍을 모두 확정한 참가자만 KPI 표본에 넣기 때문에, 참가자가 측정 문항을 알아채면 지표가 조용히 오염됩니다.
+그래서 응답 페이로드에서 `measureCode`·`anchorCode`·`level`을 **단계와 무관하게 영구 제외**합니다.
+
+## 기술 스택
+
+| 영역 | 선택 |
+|---|---|
+| 프레임워크 | Next.js 15 (App Router), TypeScript |
+| 스타일 | Tailwind CSS v4 |
+| DB | Supabase (PostgreSQL) |
+| 인증 | 자체 구현 — bcrypt + httpOnly 서명 쿠키 |
+| 배포 | Vercel (서울 리전, Cron 2건) |
+| 패키지 매니저 | pnpm 10 |
+
+브라우저에서 Supabase를 직접 호출하지 않습니다. 모든 DB 접근은 Route Handler에서 service role 키로만 이뤄지고,
+그래서 RLS 정책도 쓰지 않습니다. `NEXT_PUBLIC_SUPABASE_*` 환경변수는 존재하지 않습니다.
+
+## 설계에서 특히 신경 쓴 것
+
+퀴즈 서비스는 규칙이 조금만 어긋나도 순위 전체가 무의미해집니다. 아래 다섯 가지가 그 경계입니다.
+
+**타이머는 서버가 판정합니다.** 클라이언트가 보낸 경과시간을 믿지 않고 `served_at`과 서버 `now()`의 차이로만
+계산합니다. `served_at`은 문항을 처음 서빙할 때 한 번만 기록하므로, 새로고침으로 시간을 늘릴 수 없습니다.
+화면의 카운트다운은 표시용입니다.
+
+**정답은 답변 전에만 숨깁니다.** 판정 기준은 클라이언트가 보낸 단계 값이 아니라 서버의 `answered_at`입니다.
+이미 답한 문항은 사용자가 정답을 알고 있으니, 해설 화면을 새로고침하면 해설을 다시 보여줘야 합니다.
+
+**선택지 셔플은 세션 생성 시 한 번만** 수행하고 `choice_order`에 저장합니다. 제출값은 화면상 위치이고,
+채점은 저장된 순열로 원본 인덱스를 되돌려 비교하며, DB에는 원본 인덱스를 남깁니다. 요청마다 다시 섞으면
+정답 판정이 어긋나고 사후 분석도 불가능해집니다.
+
+**포인트는 저장하지 않고 파생합니다.** `is_correct`와 `elapsed_ms`에서 SQL 뷰와 TypeScript가 같은 식으로
+계산합니다(정답 100점 + 남은 시간 비례 보너스 최대 100점). 두 구현이 어긋나면 결과 화면과 순위가 갈라지므로
+단위 테스트로 묶어 뒀습니다.
+
+**운영 파라미터는 하드코딩하지 않습니다.** 제한시간·세션 만료·최소 응시 회차·부서 최소 인원 등은
+`app_config` 테이블에서 읽습니다.
+
+## 시작하기
 
 ```bash
 git clone https://github.com/kym-hrdkorea/esgsafety-goldenbell.git
 cd esgsafety-goldenbell
 pnpm install
-# 아래 '수동 이관' 대로 .env.local 을 만든 다음
+# 아래 환경변수 안내대로 .env.local 을 만든 다음
 pnpm typecheck && pnpm build   # 통과하면 환경변수가 맞다
 pnpm dev                       # http://localhost:3000
 ```
 
-`node_modules/` · `.next/` · `next-env.d.ts` · `tsconfig.tsbuildinfo` 는 **옮기지 않는다.**
-`pnpm install`과 첫 빌드가 다시 만든다. `pnpm-lock.yaml`은 커밋돼 있으므로 버전은 동일하게 고정된다.
+`node_modules/` · `.next/` · `next-env.d.ts` · `tsconfig.tsbuildinfo`는 옮기지 않습니다.
+`pnpm-lock.yaml`이 커밋돼 있어 `pnpm install`이 같은 버전으로 복원합니다.
 
-### 수동 이관 — `.env.local` (git에 없다. 이게 유일한 필수 작업)
+### 환경변수 — `.env.local`
 
-비밀값이라 저장소에 올리지 않는다(`.gitignore`의 `.env*.local`).
-**개발을 이어받을 때 우선 옮길 값은 Supabase 2개뿐이다.** 관리자 초기값은 T22 운영 설정에서 한 번만 사용하고 삭제한다.
+비밀값이라 저장소에 없습니다(`.gitignore`). **개발을 이어받을 때 실제로 옮겨야 하는 값은 Supabase 2개뿐입니다.**
 
-| 키 | 신규 PC에서 | 어디서 얻나 |
+| 키 | 필요성 | 어디서 얻나 |
 |---|---|---|
-| `SUPABASE_URL` | **필수 · 동일해야 함** | Supabase 대시보드 → Project Settings → API |
-| `SUPABASE_SERVICE_ROLE_KEY` | **필수 · 동일해야 함** | 같은 화면 (service_role, `anon` 아님) |
-| `SESSION_SECRET` | 새로 생성해도 무해 | 아래 생성 명령 |
-| `CRON_SECRET` | 새로 생성해도 무해 | 아래 생성 명령 |
-| `ADMIN_LOGIN_ID` | T22 초기 관리자 시딩 때만 필요 | 로컬에서 1회 시딩 후 삭제 가능 |
-| `ADMIN_INIT_PASSWORD` | T22 초기 관리자 시딩 때만 필요 | 12자 이상, 시딩 성공 직후 삭제 |
+| `SUPABASE_URL` | **필수 · 동일해야 함** | Supabase 대시보드 → Project Settings → Data API |
+| `SUPABASE_SERVICE_ROLE_KEY` | **필수 · 동일해야 함** | 같은 화면의 `service_role` 키 (`anon` 아님) |
+| `SESSION_SECRET` | 새로 만들어도 무해 | 아래 명령 |
+| `CRON_SECRET` | 새로 만들어도 무해 | 아래 명령 |
+| `ADMIN_LOGIN_ID` | 관리자 최초 시딩 때만 | 시딩 후 비워 둔다 |
+| `ADMIN_INIT_PASSWORD` | 관리자 최초 시딩 때만 | 16자 이상, 성공 직후 비운다 |
 
-비밀값 생성 (Windows에 `openssl`이 없을 수 있으므로 Node 쪽이 확실하다)
 ```bash
 node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
-# openssl 이 있으면: openssl rand -base64 32
 ```
 
-`SESSION_SECRET`·`CRON_SECRET`을 새로 만들어도 되는 이유: 세션 쿠키는 도메인별이라
-`localhost` 쿠키와 운영 쿠키가 애초에 별개이고(그 PC에서 다시 로그인하면 끝),
-cron 라우트는 자기 환경변수와만 대조한다. **덕분에 채널로 옮길 비밀값이 2개로 줄어든다.**
+세션 시크릿을 새로 만들어도 되는 이유는 쿠키가 도메인별이라 `localhost`와 운영이 애초에 별개이고,
+Cron 라우트는 자기 환경변수와만 대조하기 때문입니다. 덕분에 채널로 옮길 비밀값이 둘로 줄어듭니다.
 
-**전달 방법 — 권장 순서**
-1. **파일을 옮기지 말고 Supabase 대시보드에서 직접 복사해 새로 작성한다.** 가장 안전하다.
-2. 사내 비밀번호 관리자(공유 보관함)를 경유한다.
-3. 카카오톡·이메일·메모 앱·깃 커밋으로 service role 키를 보내지 않는다.
-   이 키는 RLS를 우회하는 전권 키다(그래서 이 프로젝트는 RLS를 쓰지 않는다 — `CLAUDE.md` 규칙 1).
+service role 키는 RLS를 우회하는 전권 키입니다. **대시보드에서 직접 복사해 새로 작성하는 것이 가장 안전하고**,
+차선은 사내 비밀번호 관리자입니다. 메신저·이메일·메모 앱으로 보내지 않습니다.
 
-`.env.example`에 키 목록과 형식이 있으니 그걸 복사해 채우면 된다.
+### 사내망 PC에서 걸리는 것 3가지
 
-### 선택 이관 — 없어도 개발은 된다
+셋 다 코드 문제가 아니라 PC 환경 설정입니다. 증상만 보면 회귀로 오인하기 쉽습니다.
 
-| 파일 | 없을 때 | 옮길 가치 |
+| 증상 | 원인 | 조치 |
 |---|---|---|
-| `.t13-verify.mjs` | T13 재검증만 못 함 | 낮음. 이미 32건 통과·커밋 완료. service role로 실DB를 건드려 의도적으로 gitignore돼 있다 |
-| `.claude/settings.local.json` | 권한 프롬프트가 몇 번 더 뜸 | 낮음 |
-| `.codex/config.toml` | Codex 검증 시 재설정 | Codex를 쓸 때만 |
+| `pnpm` 명령이 전부 실패한다 | corepack이 pnpm 11을 받아오는데, 이 저장소는 pnpm 10 기준이다. pnpm 11은 `package.json`의 `pnpm.onlyBuiltDependencies`를 읽지 않는다 | `corepack prepare pnpm@10 --activate` |
+| `pnpm test:prelearning`만 "JSON·SQL 본문 불일치"로 실패한다 | `core.autocrlf=true`면 체크아웃이 CRLF로 바뀌어, 검증기가 SQL 리터럴의 줄바꿈과 JSON의 `\n`을 비교하다 어긋난다 | `git config core.autocrlf false` 후 재체크아웃 |
+| `/api/health`가 500, 로그에 `fetch failed` | 사내망 TLS 검사 프록시의 자체서명 인증서(`SELF_SIGNED_CERT_IN_CHAIN`). Node가 사내 루트 CA를 모른다 | 아래처럼 CA 번들을 지정해 기동한다. Vercel 운영에는 해당 없다 |
 
-### 이어받은 직후 상태 확인
+```powershell
+$env:NODE_EXTRA_CA_CERTS='C:\certs\win-root-bundle.pem'; pnpm dev
+```
+
+터미널에서 직접 실행하면 사용자 환경변수 `NODE_EXTRA_CA_CERTS`가 자동으로 상속되므로 별도 지정이 필요 없습니다.
+
+## 검증
 
 ```bash
-git log --oneline -3        # 최신 카드 커밋은 tasks/continuation-plan.md와 대조
-pnpm typecheck              # 무출력 = 정상
+pnpm typecheck        # 무출력 = 정상
+pnpm test             # 채점 로직 단위 테스트
+pnpm test:admin       # 관리자 CSV·KST 유틸
+pnpm test:items       # 문항은행 (6×12·유형·난이도·측정쌍)
+pnpm test:prelearning # 사전학습 본문 ↔ SQL 정합
+pnpm test:outcomes    # 성과측정 산식·계약
+pnpm test:sessions    # 세션 원자성·복구·만료
+pnpm test:t20         # 순위·CSV·경계 UI 회귀
+pnpm test:t22         # 운영 설정(리전·Cron·인증·KST)
+pnpm build
 ```
 
-DB는 원격 Supabase를 공유한다. T21에서 사용자 승인 아래 2026-08-13에 6회차 스키마·조직·72문항·사전학습·뷰·세션 함수를 적용했다.
-현재 참가자·응시·응답·열람 데이터는 0행, 관리자 계정은 1행이다. 운영 Cron이 빈 순위 기준 스냅샷 4개를 생성했으며, 여섯 회차는 개시 전 보호를 위해 모두 `is_published=false`다.
-재적용 전에는 `db/t21-snapshot.mjs`로 백업·행 수를 확인하고, 데이터가 있으면 자동 초기화하지 않는다(`CLAUDE.md` 규칙 9-1).
+`test:items`부터는 로컬 파일만 검사하므로 환경변수가 없어도 돌아갑니다.
+실DB 계약을 확인하려면 `pnpm test:t21`(읽기 전용)을 씁니다.
 
-## 진행 순서
+## DB 구축
 
-### 0단계 — DB 구축 (30분)
-새 Supabase 프로젝트는 SQL Editor에서 아래 순서로 구축한다.
+새 Supabase 프로젝트라면 SQL Editor에서 순서대로 실행합니다.
+
 ```
-01_schema.sql → 02_seed_org.sql → 03_seed_rounds.sql → 04_seed_items.sql → 05_views.sql → 06_seed_prelearning.sql → 07_session_functions.sql
+01_schema.sql → 02_seed_org.sql → 03_seed_rounds.sql → 04_seed_items.sql
+→ 05_views.sql → 06_seed_prelearning.sql → 07_session_functions.sql
 ```
-기존 프로젝트를 재구축할 때는 백업·0행 확인 후 `build-t21-migration.mjs`로 보호된 단일 트랜잭션을 생성한다. T21 실DB에는 `07_session_functions.sql`까지 적용돼 있다.
-`03_seed_rounds.sql`의 `opens_at`/`closes_at`은 **확정 일정**이다(2026-08-17 개시, 6회차 09/25 마감).
-실DB와 항상 정합해야 하며, 일정이 바뀌면 시드 재실행이 아니라 6행 절대값 UPDATE로 조정하고
-이 파일도 같은 값으로 함께 고친다.
 
-확인 쿼리
+기존 프로젝트를 재구축할 때는 `db/t21-snapshot.mjs`로 백업·행 수를 확인한 뒤
+`db/build-t21-migration.mjs`로 보호된 단일 트랜잭션을 만듭니다. 응시 데이터가 있으면 초기화하지 않습니다.
+
 ```sql
 SELECT count(*) FROM org_unit;    -- 50
 SELECT count(*) FROM department;  -- 193
 SELECT count(*) FROM quiz_item;   -- 72
 SELECT item_type, count(*) FROM quiz_item GROUP BY 1;
 -- MC4 55 / OX 14 / ORDER 2 / SHORT 1
-SELECT measure_code, count(*) FROM quiz_item
- WHERE measure_code IS NOT NULL GROUP BY 1 ORDER BY 1;
--- M01~M12, M01P~M12P, T01~T04 각 1행
 ```
 
-### 1단계 — 설계 검증 (Codex, 1시간)
-`prompts/2_codex-review.md`의 ① 프롬프트 사용.
-**구현 전에 스키마·명세 불일치를 잡는다.** 구현 후 발견하면 마이그레이션 작업이 붙는다.
+회차 일정(`opens_at`/`closes_at`)이 바뀌면 시드를 다시 돌리지 않고 **6행 절대값 UPDATE**로 조정하고,
+`db/03_seed_rounds.sql`과 `db/verify-t21.mjs`의 기대 일정도 같은 값으로 함께 고칩니다.
 
-### 2단계 — 디자인 (Claude Design, 병렬 진행)
-`design/1_claude-design.md` 사용. 응시 화면 답변/해설 단계를 먼저 확정한다.
-**구현보다 먼저 돌린다** — 퀴즈 앱은 UI가 곧 제품이고, 나중에 얹으면 상태 구조가 어긋난다.
+## 운영 설정
 
-### 3단계 — 구현 (Claude Code, 2~3주)
-`prompts/claude-code-runbook.md`로 시작.
-`CLAUDE.md`와 `AGENTS.md`를 리포 루트에 배치할 것.
-T00부터 카드 단위로, 하나 끝날 때마다 확인.
+- 함수 리전은 서울 `icn1`. 순위 갱신 Cron은 매분, 세션 만료는 5분 주기입니다.
+- 두 Cron 라우트는 `maxDuration=60`이고 `CRON_SECRET` Bearer 인증이 없으면 401입니다.
+- **매분 Cron은 Vercel Pro 이상이 필요합니다.** Hobby에서는 이 일정으로 배포가 실패합니다.
+- Production에는 서버 전용 비밀값 4개(`SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `SESSION_SECRET`, `CRON_SECRET`)만 둡니다.
+- Vercel은 `TZ`를 예약 환경변수로 거부합니다. 회차 시각은 `+09`로 저장하고 화면·CSV에서 `Asia/Seoul`을 명시하므로 `TZ`에 의존하지 않습니다.
+- 환경변수 변경은 기존 배포에 소급되지 않습니다. 새 Production 배포 후 `/api/health`와 Cron을 반드시 확인합니다.
+- 회차 공개(`is_published`) 전환 버튼은 의도적으로 만들지 않았습니다. 개시 시점에 SQL로 1회 전환합니다.
 
-### 4단계 — 카드별 리뷰 (Codex)
-각 카드 완료 후 `prompts/2_codex-review.md`의 ② 프롬프트로 리뷰.
+## 현재 상태
 
-### 5단계 — 부하 테스트 및 개시 (T12)
-동시 100 VU, 오류율 0%, p95 < 500ms 확인 후 개시.
-
-성과측정 로컬 검증:
-```bash
-node db/validate-items.mjs
-node db/validate-prelearning.mjs
-node db/validate-outcomes.mjs
-node db/validate-session-functions.mjs
-node db/validate-t20.mjs
-npm.cmd run test:admin
-# T21: 비밀값은 출력하지 않고 .env.local에서만 읽는다. 저장 경로는 Git 밖으로 지정한다.
-node --env-file=.env.local db/t21-snapshot.mjs --include-data --out <백업_폴더_절대경로>
-npm.cmd run test:t21
-npm.cmd run test:t22
-```
-
-### T22 Vercel 운영 설정
-
-- `vercel.json`은 함수 리전을 서울 `icn1`로 고정한다.
-- 순위 갱신은 `* * * * *`(매분), 세션 만료는 `*/5 * * * *`(5분마다)다.
-- 두 Cron Route Handler는 `maxDuration=60`이고 `CRON_SECRET` Bearer 인증이 없으면 401을 반환한다.
-- 매분 Cron 배포는 Vercel Pro 이상이 필요하다. Hobby에서는 이 일정으로 배포가 실패한다.
-- Production에는 `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `SESSION_SECRET`, `CRON_SECRET`만 계속 보관한다.
-- Vercel은 `TZ`를 예약 환경변수로 거부한다. 이 프로젝트는 회차 시각에 `+09`를 저장하고 모든 화면·CSV에서 `Asia/Seoul`을 명시하므로 `TZ` 환경변수에 의존하지 않는다.
-- 관리자를 로컬에서 먼저 시딩했다면 `ADMIN_LOGIN_ID`와 `ADMIN_INIT_PASSWORD`는 Vercel에 올리지 않는다. Production에서 시딩한 경우 성공 직후 둘 다 삭제하고 다시 배포한다.
-- 환경변수 변경은 기존 배포에 소급되지 않으므로 반드시 새 Production 배포 후 `/api/health`와 Cron을 검증한다.
-- 2026-08-13에 Vercel 팀과 Supabase 조직의 Pro 전환을 확인했고, T22 단일 커밋을 `main`에 반영한 새 Production 배포로 운영 설정을 갱신했다.
-- Vercel에는 서버 전용 비밀값 4개가 Sensitive로 등록되어 있다. 관리자 초기 환경변수는 로컬 시딩 후 제거되어 Vercel에 올리지 않는다.
-
-## 개시 전 반드시 확인
-- [x] `03_seed_rounds.sql` 실제 일정 반영, `is_published` 운영 전환 절차 확정
-- [x] 사전학습 본문 6건 작성 후 `06_seed_prelearning.sql`로 `quiz_round.prelearning_body` UPDATE
-- [x] T21 Supabase 6회차·72문항·뷰 16개·세션 RPC 3개 적용 및 실DB 검증
-- [ ] A2 앵커 6문항(안전신문고 관련)을 실제 신고 화면·절차와 대조 검수
-- [x] 법령 시점 재확인: 2-04, 2-08, 4-09, 6-03, 6-07, 6-11
-- [ ] 파일럿 응시 5~10명, 회차 평균 정답률 70~75% 구간 확인
-- [x] 관리자 계정 1회 시딩 후 로컬 `ADMIN_LOGIN_ID`·`ADMIN_INIT_PASSWORD` 값 삭제
-- [x] Vercel Cron 2건 등록 (`refresh-rankings`, `expire-sessions`)
-- [ ] 매주 금요일 응답 CSV 수동 백업 절차 확정 (성과 데이터 이중화)
-
-## 미결 사항
-| 항목 | 필요 시점 |
+| 항목 | 상태 |
 |---|---|
-| 포상 인원·금액 확정 | 계획서 결재 시 |
+| 구현 | T00~T22 완료. 실DB에 6회차·72문항·뷰 16개·세션 RPC 3개 적용 |
+| 검증 | 타입검사·단위 테스트 33개·검증기 6종·프로덕션 빌드 통과 |
+| 운영 일정 | **미정.** 기존 시드값(2026-08-17 개시)은 경과했으므로 확정 후 재설정 필요 |
+| 남은 일 | 100 VU 부하 테스트 증적, 파일럿 5~10명, 문항 주제 확대 검토 |
+
+문항은 현재 전부 안전 주제입니다. 안전 비중을 40%대로 유지하면서 **청렴·적극행정을 추가하는 개편**을 검토 중이며,
+후보 문항과 법령 검증 근거는 `tasks/후보문항-*.md`에 있습니다.
+
+### 개시 전 체크리스트
+
+- [x] 회차 일정 반영, `is_published` 전환 절차 확정
+- [x] 사전학습 본문 6건 작성 및 적용
+- [x] Supabase 6회차·72문항·뷰·RPC 적용 및 실DB 검증
+- [x] 법령 시점 재확인 (2-04, 2-08, 4-09, 6-03, 6-07, 6-11)
+- [x] 관리자 계정 1회 시딩 후 초기 환경변수 삭제
+- [x] Vercel Cron 2건 등록
+- [ ] A2 앵커 6문항을 실제 안전신문고 화면·절차와 대조 검수
+- [ ] 파일럿 응시 5~10명, 회차 평균 정답률 70~75% 확인
+- [ ] 매주 금요일 응답 CSV 백업 절차 확정
+- [ ] 포상 인원·금액 확정
+
+## 문서
+
+작업을 이어받는다면 이 순서로 읽는 편이 빠릅니다.
+
+| 문서 | 내용 |
+|---|---|
+| [`tasks/continuation-plan.md`](tasks/continuation-plan.md) | **현재 기준 단일 진입점.** 카드 순서와 완료 조건 |
+| [`spec/business-rules.md`](spec/business-rules.md) | 채점·타이머·순위 규칙. 버그의 대부분이 여기서 나온다 |
+| [`spec/decisions-addendum.md`](spec/decisions-addendum.md) | 확정 결정 A~P. 다른 문서에 없는 판단 근거가 여기 있다 |
+| [`spec/api-contract.md`](spec/api-contract.md) | API 계약과 금지 필드 |
+| [`spec/functional-spec.md`](spec/functional-spec.md) | 기능 범위와 **만들지 않는 것** |
+| [`db/01_schema.sql`](db/01_schema.sql) | 스키마 (12개 테이블) |
+| [`design/copy.md`](design/copy.md) | 화면 문안 확정본. 모든 UI 텍스트의 유일 출처 |
+| [`decisions.md`](decisions.md) | 의사결정 24건과 정정 이력 |
+| [`CLAUDE.md`](CLAUDE.md) | 절대 규칙 10개. 위반하면 재작업 |
+
+`tasks/ux-findings.md`와 `tasks/code-review-findings.md`는 8회차 시절의 감사 기록입니다.
+6회차 개편으로 대체된 판단이 섞여 있어 이력으로만 봅니다.
+
+## 디렉터리
+
+```
+app/
+  (auth)/         로그인 · 회원가입 · 비밀번호 재설정
+  (main)/         홈 · 사전학습 · 응시 · 결과 · 복습 · 순위 · 내 기록
+  admin/          관리자 조회 (읽기 전용 + CSV)
+  api/**/route.ts 모든 서버 로직
+lib/
+  db.ts           Supabase 서버 클라이언트 (service role)
+  session.ts      HMAC 서명 쿠키 세션
+  config.ts       app_config 로더 (60초 캐시)
+  grading.ts      유형별 채점 — 단위 테스트 대상
+  shuffle.ts      시드 기반 셔플
+  quiz.ts         세션 수명주기 · 개방 판정
+  admin.ts        페이지네이션 · CSV · KST 포맷
+components/
+  quiz/           OxItem · Mc4Item · OrderItem · ShortItem · Timer · Explanation
+  dashboard/      RankTable (5행 + 더보기)
+db/               스키마 · 시드 · 뷰 · 세션 함수 · 검증 스크립트
+spec/             명세 5종 + 법령 근거
+design/           문안 · 화면 · 토큰 · 목업 11종
+tasks/            작업 카드 · 계획 · 감사 기록 · 문항 후보
+```
