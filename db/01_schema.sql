@@ -79,7 +79,8 @@ CREATE TABLE IF NOT EXISTS participant (
   id              uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   emp_no          text NOT NULL UNIQUE,           -- 사번
   nickname        text NOT NULL UNIQUE,           -- 가입 후 변경 불가 (수정 API 없음)
-  password_hash   text NOT NULL,                  -- bcrypt(4자리 PIN). 평문 저장 금지
+  password_hash   text NOT NULL,                  -- bcrypt(휴대폰 끝 4자리, P항). 평문 저장 금지
+  phone           text,                           -- 휴대폰 번호(숫자만). 포상 연락용. 2026-08-20 이전 가입 행은 NULL
   department_id   int  NOT NULL REFERENCES department(id),
   org_unit_id     int  NOT NULL REFERENCES org_unit(id),  -- 비정규화(순위 쿼리용)
   failed_attempts int  NOT NULL DEFAULT 0,
@@ -90,7 +91,8 @@ CREATE TABLE IF NOT EXISTS participant (
 CREATE INDEX IF NOT EXISTS idx_participant_dept ON participant(department_id);
 CREATE INDEX IF NOT EXISTS idx_participant_unit ON participant(org_unit_id);
 
--- 수집 항목은 사번·닉네임·PIN해시·소속/부서뿐. 이름·이메일·연락처는 수집하지 않는다.
+-- 수집 항목은 사번·닉네임·PIN해시·소속/부서·휴대폰(포상 연락용, 2026-08-20 P항).
+-- 이름·이메일은 수집하지 않는다. 휴대폰은 포상 지급 연락에만 쓴다.
 
 -- ---------------------------------------------------------------------
 -- 3. 회차

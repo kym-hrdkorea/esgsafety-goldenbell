@@ -10,7 +10,12 @@ const BodySchema = z.object({
   empNo: z.string().trim().regex(/^\d+$/),
   nickname: z.string().trim().min(2).max(12),
   departmentId: z.number().int().positive(),
-  pin: z.string().regex(/^\d{4}$/),
+  // 휴대폰 번호: 하이픈·공백 허용 입력 → 숫자만 정규화 저장 (P항).
+  // 비밀번호는 서버가 끝 4자리로 자동 설정한다.
+  phone: z
+    .string()
+    .transform((v) => v.replace(/\D/g, ""))
+    .pipe(z.string().regex(/^01[016789]\d{7,8}$/)),
 });
 
 function validationResponse(field: string, message: string) {
@@ -28,8 +33,8 @@ function validationMessage(field: string): string {
       return "닉네임을 2~12자로 입력해 주세요.";
     case "departmentId":
       return "소속과 부서를 선택해 주세요.";
-    case "pin":
-      return "숫자 4자리를 입력해 주세요.";
+    case "phone":
+      return "올바른 휴대폰 번호를 입력해 주세요.";
     default:
       return "입력값을 확인해 주세요.";
   }
@@ -62,13 +67,15 @@ export async function POST(req: NextRequest) {
       return validationResponse("departmentId", "소속과 부서를 선택해 주세요.");
     }
 
-    const passwordHash = await bcrypt.hash(body.pin, 10);
+    // 비밀번호 = 휴대폰 끝 4자리 (P항). phone은 정규화된 숫자만 저장한다.
+    const passwordHash = await bcrypt.hash(body.phone.slice(-4), 10);
     const { data: created, error: insErr } = await db
       .from("participant")
       .insert({
         emp_no: body.empNo,
         nickname: body.nickname,
         password_hash: passwordHash,
+        phone: body.phone,
         department_id: dept.id,
         org_unit_id: dept.org_unit_id,
       })

@@ -24,8 +24,7 @@ export default function ResetPinPage() {
 
   const [empNo, setEmpNo] = useState("");
   const [nickname, setNickname] = useState("");
-  const [pin, setPin] = useState("");
-  const [pinConfirm, setPinConfirm] = useState("");
+  const [phone, setPhone] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   const [allDepts, setAllDepts] = useState<DeptSearchRow[]>([]);
@@ -33,7 +32,7 @@ export default function ResetPinPage() {
   const [picked, setPicked] = useState<DeptSearchRow | null>(null);
 
   const [deptError, setDeptError] = useState<string | null>(null);
-  const [pinError, setPinError] = useState<string | null>(null);
+  const [phoneError, setPhoneError] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
   const searchRef = useRef<HTMLInputElement>(null);
 
@@ -90,15 +89,13 @@ export default function ResetPinPage() {
       return;
     }
 
-    if (!/^\d{4}$/.test(pin)) {
-      setPinError("숫자 4자리를 입력해 주세요.");
+    // 휴대폰 재입력 방식 (P항) — 하이픈·공백 허용 입력을 숫자만으로 정규화한다.
+    const normalizedPhone = phone.replace(/\D/g, "");
+    if (!/^01[016789]\d{7,8}$/.test(normalizedPhone)) {
+      setPhoneError("올바른 휴대폰 번호를 입력해 주세요.");
       return;
     }
-    if (pin !== pinConfirm) {
-      setPinError("비밀번호가 일치하지 않습니다.");
-      return;
-    }
-    setPinError(null);
+    setPhoneError(null);
 
     if (submitting) return;
     setSubmitting(true);
@@ -113,7 +110,7 @@ export default function ResetPinPage() {
           empNo,
           nickname,
           departmentId: picked!.id,
-          newPin: pin,
+          phone: normalizedPhone,
         }),
       });
 
@@ -187,7 +184,8 @@ export default function ResetPinPage() {
               비밀번호를 잊으셨나요?
             </h1>
             <div className="text-[14px] leading-[1.6] text-gb-text-secondary">
-              가입할 때 입력한 정보로 확인한 뒤 새 비밀번호를 설정합니다.
+              가입할 때 입력한 정보로 확인한 뒤 휴대폰 번호로 비밀번호를 다시
+              설정합니다.
             </div>
           </div>
 
@@ -323,52 +321,34 @@ export default function ResetPinPage() {
           ) : (
             <div className="flex flex-col gap-3.5">
               <div className="flex flex-col gap-1.5">
-                <label className="gb-label" htmlFor="pin">
-                  새 비밀번호 4자리
+                <label className="gb-label" htmlFor="phone">
+                  휴대폰 번호
                 </label>
                 <input
-                  id="pin"
-                  className="gb-input tracking-[0.3em]"
-                  type="password"
-                  inputMode="numeric"
-                  maxLength={4}
-                  placeholder="숫자 4자리"
-                  value={pin}
+                  id="phone"
+                  className="gb-input"
+                  type="tel"
+                  inputMode="tel"
+                  autoComplete="tel"
+                  maxLength={13}
+                  placeholder="휴대폰 번호를 입력하세요"
+                  value={phone}
                   onChange={(e) => {
-                    setPin(e.target.value);
-                    setPinError(null);
+                    setPhone(e.target.value);
+                    setPhoneError(null);
                   }}
-                  aria-invalid={pinError !== null}
-                  autoComplete="new-password"
+                  aria-invalid={phoneError !== null}
                   required
                 />
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <label className="gb-label" htmlFor="pinConfirm">
-                  새 비밀번호 확인
-                </label>
-                <input
-                  id="pinConfirm"
-                  className="gb-input tracking-[0.3em]"
-                  type="password"
-                  inputMode="numeric"
-                  maxLength={4}
-                  placeholder="숫자 4자리"
-                  value={pinConfirm}
-                  onChange={(e) => {
-                    setPinConfirm(e.target.value);
-                    setPinError(null);
-                  }}
-                  aria-invalid={pinError !== null}
-                  autoComplete="new-password"
-                  required
-                />
-                {pinError && (
+                {phoneError && (
                   <div className="gb-field-error">
                     <span className="font-black">✕</span>
-                    {pinError}
+                    {phoneError}
                   </div>
                 )}
+                <div className="text-[13px] leading-[1.6] text-gb-text-secondary">
+                  휴대폰 번호 끝 4자리가 비밀번호로 설정됩니다.
+                </div>
               </div>
             </div>
           )}
@@ -384,7 +364,7 @@ export default function ResetPinPage() {
               className="gb-cta-sub"
               onClick={() => {
                 setStep(1);
-                setPinError(null);
+                setPhoneError(null);
               }}
             >
               이전

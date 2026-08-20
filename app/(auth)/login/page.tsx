@@ -133,6 +133,9 @@ export default function LoginPage() {
                   올바르지 않습니다.
                 </div>
               )}
+              <div className="text-[13px] leading-[1.6] text-gb-text-secondary">
+                휴대폰 번호 끝 4자리가 비밀번호로 설정됩니다.
+              </div>
             </div>
           </div>
         </div>

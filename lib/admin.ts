@@ -87,6 +87,7 @@ export function formatKst(iso: string | null | undefined): string {
 export type ParticipantInfo = {
   empNo: string;
   nickname: string;
+  phone: string; // 포상 연락용 (P항). 2026-08-20 이전 가입 행은 빈 문자열
   orgUnitName: string;
   departmentName: string;
 };
@@ -97,7 +98,7 @@ export async function participantMap(): Promise<Map<string, ParticipantInfo>> {
     db
       .from("participant")
       .select(
-        "id, emp_no, nickname, org_unit:org_unit_id(name), department:department_id(name)"
+        "id, emp_no, nickname, phone, org_unit:org_unit_id(name), department:department_id(name)"
       )
       .order("id")
       .range(from, to)
@@ -108,12 +109,14 @@ export async function participantMap(): Promise<Map<string, ParticipantInfo>> {
       id: string;
       emp_no: string;
       nickname: string;
+      phone: string | null;
       org_unit: { name: string };
       department: { name: string };
     };
     map.set(row.id, {
       empNo: row.emp_no,
       nickname: row.nickname,
+      phone: row.phone ?? "",
       orgUnitName: row.org_unit.name,
       departmentName: row.department.name,
     });

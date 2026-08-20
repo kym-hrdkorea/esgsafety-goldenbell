@@ -17,11 +17,13 @@
 
 ### `POST /api/auth/signup`
 ```
-req  { empNo, nickname, departmentId, pin }
+req  { empNo, nickname, departmentId, phone }
 res  201 { participantId, nickname }
 err  409 EMP_NO_TAKEN | NICKNAME_TAKEN, 400 VALIDATION
 ```
-- `400 VALIDATION` 응답은 `{ code, field, message }` 형식이다. `field`는 `empNo`, `nickname`, `departmentId`, `pin`, `form` 중 하나이며, 가입 화면은 해당 입력란에 오류를 표시한다.
+- `400 VALIDATION` 응답은 `{ code, field, message }` 형식이다. `field`는 `empNo`, `nickname`, `departmentId`, `phone`, `form` 중 하나이며, 가입 화면은 해당 입력란에 오류를 표시한다.
+- `phone`은 하이픈·공백 허용 입력을 서버가 숫자만으로 정규화해 저장한다(`^01[016789]\d{7,8}$`).
+  **비밀번호는 서버가 휴대폰 끝 4자리로 자동 설정한다**(P항). 별도 `pin` 필드는 받지 않는다.
 - `orgUnitId`는 서버가 `departmentId`로부터 조회해 채운다. 클라이언트 값 무시.
 
 ### `POST /api/auth/login`
@@ -32,12 +34,14 @@ err  401 INVALID_CREDENTIALS, 423 LOCKED { lockedUntil }
 ```
 
 ### `POST /api/auth/reset-pin`
-비밀번호 자율 재설정. → addendum O항
+비밀번호 자율 재설정. → addendum O항. 2026-08-20부터 휴대폰 재입력 방식(P항).
 ```
-req  { empNo, nickname, departmentId, newPin }
+req  { empNo, nickname, departmentId, phone }
 res  200 { ok: true }
 err  401 VERIFICATION_FAILED, 429 TOO_MANY_REQUESTS, 400 VALIDATION
 ```
+- 서버는 `phone`을 숫자만으로 정규화한 뒤 **끝 4자리로 `password_hash`를 재설정하고
+  `participant.phone`도 함께 갱신**한다(연락처 변경 경로 겸용).
 - 실패 응답은 **사번 부재·닉네임 불일치·부서 불일치를 구분하지 않는다**(열거 차단).
   세 조건을 단일 쿼리 WHERE에 넣어 핸들러가 "사번은 있는데 나머지가 틀렸다"는 사실을
   아예 갖지 못하게 한다.
@@ -219,6 +223,7 @@ GET /api/admin/short-unmatched     → [{ itemCode, roundNo, nickname, submitted
 ### `GET /api/admin/export/[kind]`
 `kind` ∈ `answers` | `scores` | `items` | `matched` | `outcomes` | `heatmap` | `participation`. 무효 kind는 `404 NOT_FOUND`.
 - CSV: UTF-8 **BOM** + CRLF (Excel 한글 깨짐 방지). `content-disposition: attachment`.
+- `scores`에는 포상 연락용 `휴대폰` 열이 포함된다(P항). 휴대폰은 CSV에만 싣고 관리자 화면 API에는 노출하지 않는다(사번과 동일 원칙).
 - CSV의 문자열 셀은 Excel 수식으로 해석될 수 있는 선행 `=`, `+`, `-`, `@`를 이스케이프한다. 대량 조회는 안정적인 고유 정렬과 페이지네이션으로 전량 수집한다.
 - 관리자 화면과 CSV의 시각은 `Asia/Seoul` 기준 `YYYY-MM-DD HH:mm:ss`로 표시한다.
 - ★ **사번(emp_no)은 CSV에만 포함한다**(운영자 확정, T11 — 포상·행정 대조용). 화면 API에는 싣지 않는다.

@@ -30,11 +30,10 @@ export default function SignupPage() {
   const [unitId, setUnitId] = useState("");
   const [departmentId, setDepartmentId] = useState("");
   const [nickname, setNickname] = useState("");
-  const [pin, setPin] = useState("");
-  const [pinConfirm, setPinConfirm] = useState("");
+  const [phone, setPhone] = useState("");
   const [empNoError, setEmpNoError] = useState<string | null>(null);
   const [nicknameError, setNicknameError] = useState<string | null>(null);
-  const [pinError, setPinError] = useState<string | null>(null);
+  const [phoneError, setPhoneError] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -151,7 +150,7 @@ export default function SignupPage() {
     if (submitting) return;
     setEmpNoError(null);
     setNicknameError(null);
-    setPinError(null);
+    setPhoneError(null);
     setFormError(null);
     setDeptError(null);
 
@@ -163,13 +162,11 @@ export default function SignupPage() {
       return;
     }
 
-    // 클라이언트 검증 (A4·A5) — 문안은 design/copy.md 그대로
-    if (!/^\d{4}$/.test(pin)) {
-      setPinError("숫자 4자리를 입력해 주세요.");
-      return;
-    }
-    if (pin !== pinConfirm) {
-      setPinError("비밀번호가 일치하지 않습니다.");
+    // 클라이언트 검증 (A4·A5) — 문안은 design/copy.md 그대로.
+    // 하이픈·공백 허용 입력을 숫자만으로 정규화해 보낸다 (P항).
+    const normalizedPhone = phone.replace(/\D/g, "");
+    if (!/^01[016789]\d{7,8}$/.test(normalizedPhone)) {
+      setPhoneError("올바른 휴대폰 번호를 입력해 주세요.");
       return;
     }
 
@@ -182,7 +179,7 @@ export default function SignupPage() {
           empNo,
           nickname,
           departmentId: Number(departmentId),
-          pin,
+          phone: normalizedPhone,
         }),
       });
       if (res.status === 201) {
@@ -200,8 +197,8 @@ export default function SignupPage() {
         setNicknameError(body.message);
       } else if (body.field === "departmentId") {
         setDeptError(body.message);
-      } else if (body.field === "pin") {
-        setPinError(body.message);
+      } else if (body.field === "phone") {
+        setPhoneError(body.message);
       } else {
         setFormError(body.message);
       }
@@ -449,47 +446,33 @@ export default function SignupPage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-2.5">
-              <div className="flex flex-col gap-1.5">
-                <label className="gb-label" htmlFor="pin">
-                  비밀번호 4자리
-                </label>
-                <input
-                  id="pin"
-                  className="gb-input tracking-[0.3em]"
-                  type="password"
-                  inputMode="numeric"
-                  maxLength={4}
-                  placeholder="숫자 4자리"
-                  value={pin}
-                  onChange={(e) => setPin(e.target.value)}
-                  required
-                />
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <label className="gb-label" htmlFor="pinConfirm">
-                  비밀번호 확인
-                </label>
-                <input
-                  id="pinConfirm"
-                  className="gb-input tracking-[0.3em]"
-                  type="password"
-                  inputMode="numeric"
-                  maxLength={4}
-                  placeholder="숫자 4자리"
-                  value={pinConfirm}
-                  onChange={(e) => setPinConfirm(e.target.value)}
-                  aria-invalid={pinError !== null}
-                  required
-                />
+            <div className="flex flex-col gap-1.5">
+              <label className="gb-label" htmlFor="phone">
+                휴대폰 번호
+              </label>
+              <input
+                id="phone"
+                className="gb-input"
+                type="tel"
+                inputMode="tel"
+                autoComplete="tel"
+                maxLength={13}
+                placeholder="휴대폰 번호를 입력하세요"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                aria-invalid={phoneError !== null}
+                required
+              />
+              {phoneError && (
+                <div className="gb-field-error">
+                  <span className="font-black">✕</span>
+                  {phoneError}
+                </div>
+              )}
+              <div className="text-[13px] leading-[1.6] text-gb-text-secondary">
+                휴대폰 번호 끝 4자리가 비밀번호로 설정됩니다.
               </div>
             </div>
-            {pinError && (
-              <div className="gb-field-error -mt-2">
-                <span className="font-black">✕</span>
-                {pinError}
-              </div>
-            )}
             {formError && (
               <div className="gb-field-error -mt-2">
                 <span className="font-black">✕</span>
@@ -500,9 +483,12 @@ export default function SignupPage() {
         </div>
 
         <div className="flex flex-col gap-3 px-5 pt-2.5 pb-[18px]">
-          <div className="flex items-center gap-1.5 text-[13px] text-gb-text-secondary">
+          <div className="flex items-start gap-1.5 text-[13px] text-gb-text-secondary">
             <LockIcon size={14} />
-            <span>이름과 이메일은 수집하지 않습니다.</span>
+            <span>
+              이름과 이메일은 수집하지 않습니다. 휴대폰 번호는 포상 지급
+              연락에만 사용합니다.
+            </span>
           </div>
           <button type="submit" className="gb-cta" disabled={submitting}>
             가입하고 시작하기

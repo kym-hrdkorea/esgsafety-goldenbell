@@ -26,7 +26,12 @@ const BodySchema = z.object({
   empNo: z.string().regex(/^\d+$/).max(20),
   nickname: z.string().min(2).max(12),
   departmentId: z.number().int().positive(),
-  newPin: z.string().regex(/^\d{4}$/),
+  // 휴대폰 번호 재입력 방식 (P항): 새 비밀번호를 직접 받지 않고
+  // 휴대폰 끝 4자리로 재설정하며, 저장된 phone도 함께 갱신한다.
+  phone: z
+    .string()
+    .transform((v) => v.replace(/\D/g, ""))
+    .pipe(z.string().regex(/^01[016789]\d{7,8}$/)),
 });
 
 const GENERIC = "문제가 발생했습니다. 잠시 후 다시 시도해 주세요.";
@@ -85,7 +90,7 @@ export async function POST(req: NextRequest) {
     // 해시를 SELECT보다 먼저 계산한다 — 실패 경로도 같은 비용을 치르게 해서
     // "사번이 있다/없다"가 응답 시간으로 새지 않게 한다. 성공 경로에서는 어차피
     // 필요한 값이라 추가 비용이 없다.
-    const newHash = await bcrypt.hash(body.newPin, 10);
+    const newHash = await bcrypt.hash(body.phone.slice(-4), 10);
 
     // 세 조건을 한 쿼리에 넣는 것이 이 설계의 핵심이다. 사번으로 먼저 조회한 뒤
     // 코드에서 비교하면 핸들러가 "이 사번은 있는데 나머지가 틀렸다"는 사실을 손에
@@ -121,6 +126,7 @@ export async function POST(req: NextRequest) {
       .from("participant")
       .update({
         password_hash: newHash,
+        phone: body.phone,
         failed_attempts: 0,
         locked_until: null,
       })

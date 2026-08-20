@@ -87,12 +87,13 @@ async function buildCsv(kind: Kind): Promise<string> {
           .range(from, to)
       );
       return toCsv(
-        ["사번", "닉네임", "소속", "부서", "회차", "점수", "문항수", "정답률", "포인트", "종료시각(KST)"],
+        ["사번", "닉네임", "휴대폰", "소속", "부서", "회차", "점수", "문항수", "정답률", "포인트", "종료시각(KST)"],
         rows.map((r) => {
           const p = pmap.get(r.participant_id);
           return [
             p?.empNo,
             p?.nickname,
+            p?.phone,
             p?.orgUnitName,
             p?.departmentName,
             r.round_no,
