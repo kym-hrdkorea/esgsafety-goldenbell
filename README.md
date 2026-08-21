@@ -129,6 +129,17 @@ $env:NODE_EXTRA_CA_CERTS='C:\certs\win-root-bundle.pem'; pnpm dev
 
 터미널에서 직접 실행하면 사용자 환경변수 `NODE_EXTRA_CA_CERTS`가 자동으로 상속되므로 별도 지정이 필요 없습니다.
 
+**네 번째 함정 — 휴대폰으로 LAN 접속 테스트 시 로그인이 안 되는 것처럼 보입니다.**
+`pnpm start`(production)의 세션 쿠키에는 `Secure` 플래그가 붙는데, 브라우저는 `localhost`가 아닌
+평문 HTTP 출처(`http://192.168.x.x:3000`)에서 Secure 쿠키 저장을 거부합니다. 로그인 API가 200을
+반환해도 세션이 남지 않아 로그인 화면으로 되돌아옵니다. LAN 테스트 때만 아래처럼 실행하세요.
+
+```powershell
+$env:ALLOW_HTTP_COOKIE='1'; pnpm start -H 0.0.0.0
+```
+
+`ALLOW_HTTP_COOKIE`는 **Vercel에 절대 등록하지 않습니다** — 운영(HTTPS)은 항상 Secure 쿠키를 씁니다.
+
 ## 검증
 
 ```bash

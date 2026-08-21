@@ -8,6 +8,16 @@ import type { NextRequest, NextResponse } from "next/server";
 const COOKIE_NAME = "hq_session";
 const SESSION_HOURS = 12;
 
+// Secure 플래그: 운영(HTTPS)에서는 항상 켠다. 예외는 단 하나 —
+// 사내 LAN에서 휴대폰으로 http://<PC IP>:3000 접속 테스트를 할 때다.
+// 브라우저는 localhost가 아닌 평문 HTTP 출처에서 Secure 쿠키 저장을 거부하므로
+// (로그인 200 후에도 세션이 안 남아 로그인 화면으로 되돌아온다),
+// 그 경우에만 ALLOW_HTTP_COOKIE=1을 로컬 실행 환경변수로 지정해 끈다.
+// 이 변수는 Vercel에 절대 등록하지 않는다 — README 사내망 절 참고.
+const COOKIE_SECURE =
+  process.env.NODE_ENV === "production" &&
+  process.env.ALLOW_HTTP_COOKIE !== "1";
+
 function secret(): string {
   const s = process.env.SESSION_SECRET;
   if (!s) throw new Error("SESSION_SECRET 환경변수가 설정되지 않았습니다.");
@@ -29,7 +39,7 @@ export function issueSession(res: NextResponse, participantId: string): void {
   res.cookies.set(COOKIE_NAME, `${data}.${sign(data)}`, {
     httpOnly: true,
     sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
+    secure: COOKIE_SECURE,
     path: "/",
     maxAge: SESSION_HOURS * 3600,
   });
@@ -66,7 +76,7 @@ export function clearSession(res: NextResponse): void {
   res.cookies.set(COOKIE_NAME, "", {
     httpOnly: true,
     sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
+    secure: COOKIE_SECURE,
     path: "/",
     maxAge: 0,
   });
@@ -91,7 +101,7 @@ export function issueAdminSession(res: NextResponse, adminId: string): void {
   res.cookies.set(ADMIN_COOKIE_NAME, `${data}.${sign(data)}`, {
     httpOnly: true,
     sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
+    secure: COOKIE_SECURE,
     path: "/",
     maxAge: SESSION_HOURS * 3600,
   });
@@ -128,7 +138,7 @@ export function clearAdminSession(res: NextResponse): void {
   res.cookies.set(ADMIN_COOKIE_NAME, "", {
     httpOnly: true,
     sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
+    secure: COOKIE_SECURE,
     path: "/",
     maxAge: 0,
   });
