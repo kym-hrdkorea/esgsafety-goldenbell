@@ -141,7 +141,7 @@ export default function ResetPinPage() {
 
   if (done) {
     return (
-      <main className="mx-auto w-full max-w-[640px]">
+      <main className="gb-auth-bg mx-auto w-full max-w-[640px]">
         <div className="flex min-h-[calc(100dvh-10px)] flex-col">
           <div className="flex flex-1 flex-col items-center justify-center gap-6 px-5 text-center">
             <div className="flex h-[78px] w-[78px] items-center justify-center rounded-full border-[3px] border-gb-yellow-light bg-gb-gold">
@@ -169,7 +169,7 @@ export default function ResetPinPage() {
   }
 
   return (
-    <main className="mx-auto w-full max-w-[640px]">
+    <main className="gb-auth-bg mx-auto w-full max-w-[640px]">
       <form
         className="flex min-h-[calc(100dvh-10px)] flex-col"
         onSubmit={onSubmit}

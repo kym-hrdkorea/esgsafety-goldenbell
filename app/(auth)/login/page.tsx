@@ -51,7 +51,7 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="mx-auto w-full max-w-[640px]">
+    <main className="gb-auth-bg mx-auto w-full max-w-[640px]">
       <form
         className="flex min-h-[calc(100dvh-10px)] flex-col"
         onSubmit={onSubmit}

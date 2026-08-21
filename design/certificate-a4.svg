@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="3508" height="2480" viewBox="0 0 3508 2480">
+  <!-- 포상 상장 배경 — design/image-assets.md 3-2. A4 가로 300dpi 인쇄용(유일한 밝은 배경).
+       수상자 이름·부서·문구는 워드/한글에서 이 배경 위에 조판한다. -->
+  <rect width="3508" height="2480" fill="#FBFAF6" />
+
+  <!-- 이중 테두리: 바깥 골드(가는 선) + 안쪽 네이비(굵은 선) -->
+  <rect x="120" y="120" width="3268" height="2240" fill="none" stroke="#C9A227" stroke-width="8" />
+  <rect x="170" y="170" width="3168" height="2140" fill="none" stroke="#12172b" stroke-width="18" />
+
+  <!-- 네 모서리 해저드 오너먼트 (45도, 골드/네이비) -->
+  <g id="corner">
+    <path d="M170 170 h240 l-60 60 h-120 v120 l-60 60 Z" fill="#12172b" />
+    <path d="M198 170 l-28 28 v56 l84 -84 Z" fill="#C9A227" />
+    <path d="M310 170 l-140 140 v56 l196 -196 Z" fill="#C9A227" />
+  </g>
+  <use href="#corner" transform="translate(3508,0) scale(-1,1)" />
+  <use href="#corner" transform="translate(0,2480) scale(1,-1)" />
+  <use href="#corner" transform="translate(3508,2480) scale(-1,-1)" />
+
+  <!-- 중앙 워터마크 종 (저농도) -->
+  <g transform="translate(1354, 760) scale(33.3)" fill="#12172b" opacity="0.045">
+    <path d="M12 3c-3.1 0-5.2 2.3-5.2 5.4v3.4L5 14.4v1.2h14v-1.2l-1.8-2.6V8.4C17.2 5.3 15.1 3 12 3z" />
+    <path d="M10.2 17.4a1.9 1.9 0 0 0 3.6 0h-3.6z" />
+  </g>
+
+  <!-- 상단 중앙 엠블럼 -->
+  <g transform="translate(1754, 560)">
+    <polygon points="0,-190 164.5,-95 164.5,95 0,190 -164.5,95 -164.5,-95"
+             fill="#FBFAF6" stroke="#C9A227" stroke-width="16" />
+    <polygon points="0,-152 131.6,-76 131.6,76 0,152 -131.6,76 -131.6,-76"
+             fill="none" stroke="#12172b" stroke-width="6" />
+    <g transform="translate(-120, -128) scale(10)" fill="#C9A227">
+      <path d="M12 3c-3.1 0-5.2 2.3-5.2 5.4v3.4L5 14.4v1.2h14v-1.2l-1.8-2.6V8.4C17.2 5.3 15.1 3 12 3z" />
+      <path d="M10.2 17.4a1.9 1.9 0 0 0 3.6 0h-3.6z" />
+    </g>
+  </g>
+
+  <!-- 하단 중앙 구분 장식 -->
+  <g transform="translate(1754, 2160)">
+    <rect x="-260" y="-4" width="200" height="8" fill="#C9A227" />
+    <rect x="60" y="-4" width="200" height="8" fill="#C9A227" />
+    <polygon points="0,-26 22.5,-13 22.5,13 0,26 -22.5,13 -22.5,-13" fill="none" stroke="#12172b" stroke-width="6" />
+  </g>
+</svg>

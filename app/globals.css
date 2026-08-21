@@ -76,6 +76,36 @@ body {
     );
   }
 
+  /* 로그인·가입·재설정 배경 — 아케이드 캐비닛 측면 질감 (design/image-assets.md 2-1).
+     이미지 파일 없이 CSS만 쓴다(0바이트). 전부 극저대비 텍스처라 폼 가독성에
+     영향이 없고, 위쪽 40%는 비워 폼이 올라갈 자리를 남긴다.
+     레이어: ① 우하단 대형 종 실루엣(배경보다 5% 밝은 네이비, data URI)
+            ② 하단 140px 45도 해저드 밴드(옐로 5% 투명도)
+            ③ 세로 패널 이음선(미세) */
+  .gb-auth-bg {
+    background-image:
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%231a2036' d='M12 3c-3.1 0-5.2 2.3-5.2 5.4v3.4L5 14.4v1.2h14v-1.2l-1.8-2.6V8.4C17.2 5.3 15.1 3 12 3z'/%3E%3Cpath fill='%231a2036' d='M10.2 17.4a1.9 1.9 0 0 0 3.6 0h-3.6z'/%3E%3C/svg%3E"),
+      repeating-linear-gradient(
+        45deg,
+        rgba(255, 212, 0, 0.05) 0 14px,
+        rgba(0, 0, 0, 0) 14px 28px
+      ),
+      repeating-linear-gradient(
+        90deg,
+        rgba(237, 240, 247, 0.02) 0 2px,
+        rgba(0, 0, 0, 0) 2px 158px
+      );
+    background-repeat: no-repeat, no-repeat, repeat;
+    background-size:
+      340px 340px,
+      100% 140px,
+      auto;
+    background-position:
+      right -80px bottom -60px,
+      left bottom,
+      left top;
+  }
+
   .gb-label {
     font-size: 13px;
     font-weight: 700;
@@ -185,6 +215,17 @@ body {
 }
 
 /* ── Motion (design/tokens.css 키프레임) ── */
+/* 만점 인장 광선 — 도장 찍히듯 1회 등장 후 정지 (결과 화면 전용) */
+@keyframes gb-rays-in {
+  from {
+    transform: scale(0.55);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
 @keyframes gb-ring-out {
   from {
     transform: scale(0.55);

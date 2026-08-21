@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <!-- 링크 공유 미리보기(OG) — design/image-assets.md 1-2.
+       문구는 copy.md 공통 절의 서비스명·슬로건만 사용한다(규칙 9). -->
+  <rect width="1200" height="630" fill="#12172b" />
+
+  <!-- 상단 해저드 스트라이프 14px — 앱 최상단 스트립과 동일 언어 -->
+  <g clip-path="url(#topband)">
+    <rect width="1200" height="14" fill="#0b0f1d" />
+    <g fill="#FFD400">
+      <path d="M-20 14 L 8 -14 L 36 -14 L 8 14 Z" />
+    </g>
+  </g>
+  <defs>
+    <clipPath id="topband"><rect width="1200" height="14" /></clipPath>
+    <pattern id="hz" width="40" height="14" patternUnits="userSpaceOnUse" patternTransform="translate(0,0)">
+      <rect width="40" height="14" fill="#0b0f1d" />
+      <path d="M0 14 L14 0 L34 0 L20 14 Z" fill="#FFD400" />
+    </pattern>
+  </defs>
+  <rect width="1200" height="14" fill="url(#hz)" />
+
+  <!-- 좌측: 육각 엠블럼 + 종 -->
+  <g transform="translate(230, 320)">
+    <polygon points="0,-168 145.5,-84 145.5,84 0,168 -145.5,84 -145.5,-84"
+             fill="#161d33" stroke="#FFD400" stroke-width="14" />
+    <polygon points="0,-136 117.8,-68 117.8,68 0,136 -117.8,68 -117.8,-68"
+             fill="none" stroke="#2f3a5e" stroke-width="4" />
+    <!-- 종: BellIcon 경로 (24 box → scale 9) -->
+    <g transform="translate(-108, -114) scale(9)" fill="#C9A227">
+      <path d="M12 3c-3.1 0-5.2 2.3-5.2 5.4v3.4L5 14.4v1.2h14v-1.2l-1.8-2.6V8.4C17.2 5.3 15.1 3 12 3z" />
+      <path d="M10.2 17.4a1.9 1.9 0 0 0 3.6 0h-3.6z" />
+    </g>
+  </g>
+
+  <!-- 우측: 서비스명 + 슬로건 (copy.md 확정 문안) -->
+  <text x="450" y="285" font-family="Malgun Gothic" font-size="63" font-weight="700" fill="#EDF0F7">HRDK 안전 골든벨</text>
+  <text x="450" y="368" font-family="Malgun Gothic" font-size="63" font-weight="700" fill="#EDF0F7">퀴즈 리그</text>
+  <text x="452" y="432" font-family="Malgun Gothic" font-size="30" font-weight="700" fill="#FFD400">안전 이룸, 함께 해냄</text>
+
+  <!-- 6회차 진행 모티프 — 여섯 칸 중 두 칸 점등 -->
+  <g transform="translate(452, 478)">
+    <rect x="0"   width="52" height="52" rx="4" fill="#1c2138" stroke="#FFD400" stroke-width="3" />
+    <rect x="70"  width="52" height="52" rx="4" fill="#1c2138" stroke="#FFD400" stroke-width="3" />
+    <rect x="140" width="52" height="52" rx="4" fill="#1b2239" stroke="#3a4468" stroke-width="3" />
+    <rect x="210" width="52" height="52" rx="4" fill="#1b2239" stroke="#3a4468" stroke-width="3" />
+    <rect x="280" width="52" height="52" rx="4" fill="#1b2239" stroke="#3a4468" stroke-width="3" />
+    <rect x="350" width="52" height="52" rx="4" fill="#1b2239" stroke="#3a4468" stroke-width="3" />
+    <path d="M13 26 L23 36 L40 17" fill="none" stroke="#FFD400" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" />
+    <path d="M83 26 L93 36 L110 17" fill="none" stroke="#FFD400" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" />
+  </g>
+
+  <!-- 하단 미세 구분선 -->
+  <rect y="614" width="1200" height="16" fill="#0b0f1d" />
+  <rect y="612" width="1200" height="3" fill="#262f4d" />
+</svg>

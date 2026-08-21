@@ -27,6 +27,49 @@ type Props = {
 const GRID =
   "grid grid-cols-[32px_minmax(0,1.5fr)_minmax(0,1fr)_62px] items-center gap-1.5";
 
+// 1~3위 메달 — 육각형(안전표지 프레임)에 금/은/동 채움 (design/image-assets.md 2-3).
+// 숫자를 지운 순수 메달 대신 숫자를 유지한다: 공동 순위가 있어 등수 자체가 정보다.
+const HEX_CLIP =
+  "polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)";
+const MEDAL_COLORS: Record<number, string> = {
+  1: "#C9A227", // 브라스 골드 — 성취 전용색
+  2: "#A8B0C4", // 실버
+  3: "#9A6B3C", // 브론즈
+};
+
+function RankMedal({ rank }: { rank: number }) {
+  return (
+    <span style={{ filter: "drop-shadow(2px 2px 0 #070a16)" }}>
+      <span
+        className="font-gb-num flex h-[26px] w-[24px] items-center justify-center text-[13px] font-bold text-gb-bg-screen"
+        style={{ clipPath: HEX_CLIP, background: MEDAL_COLORS[rank] }}
+      >
+        {rank}
+      </span>
+    </span>
+  );
+}
+
+// 빈 상태 — 아직 울리지 않은 종과 빈 시상대 (design/image-assets.md 2-5).
+// 고장·오류가 아니라 "개시 전 대기"로 읽히도록 담담하게. 문구는 호출부의 emptyText 그대로.
+function EmptyStateArt() {
+  return (
+    <svg width="128" height="76" viewBox="0 0 128 76" fill="none" aria-hidden="true">
+      {/* 걸린 종 — 움직임 선 없이 정지 상태 */}
+      <line x1="30" y1="6" x2="30" y2="12" stroke="#3a4468" strokeWidth="3" />
+      <g transform="translate(15, 8) scale(1.35)" fill="#C9A227" opacity="0.55">
+        <path d="M12 3c-3.1 0-5.2 2.3-5.2 5.4v3.4L5 14.4v1.2h14v-1.2l-1.8-2.6V8.4C17.2 5.3 15.1 3 12 3z" />
+        <path d="M10.2 17.4a1.9 1.9 0 0 0 3.6 0h-3.6z" />
+      </g>
+      {/* 빈 시상대 3단 — 1위 칸 위 노란 점 하나가 유일한 강조 */}
+      <circle cx="88" cy="30" r="3" fill="#FFD400" />
+      <rect x="74" y="38" width="28" height="32" fill="#232b47" stroke="#3a4468" strokeWidth="2.5" />
+      <rect x="48" y="50" width="26" height="20" fill="#1b2239" stroke="#2f3a5e" strokeWidth="2.5" />
+      <rect x="102" y="56" width="24" height="14" fill="#1b2239" stroke="#2f3a5e" strokeWidth="2.5" />
+    </svg>
+  );
+}
+
 // 순위표: 기본 rank_visible_rows행, [더보기]로 전체 확장 (business-rules 5.2).
 // 공동 순위로 20행을 넘는 payload도 그대로 표시한다 (G7).
 // 확장 상태는 React state만 사용한다 — 브라우저 스토리지 금지 (규칙 5).
@@ -43,7 +86,8 @@ export default function RankTable({
 
   if (rows.length === 0) {
     return (
-      <div className="flex min-h-[120px] items-center justify-center rounded border-[3px] border-gb-border-divider">
+      <div className="flex min-h-[164px] flex-col items-center justify-center gap-2.5 rounded border-[3px] border-gb-border-divider py-6">
+        <EmptyStateArt />
         <p className="text-[14px] text-gb-text-secondary">{emptyText}</p>
       </div>
     );
@@ -73,14 +117,8 @@ export default function RankTable({
               row.rank === 1 ? "bg-[#1e1a2e]" : "bg-gb-bg-screen"
             }`}
           >
-            {row.rank === 1 ? (
-              <div className="font-gb-num flex h-[26px] w-[26px] items-center justify-center rounded-[2px] bg-gb-gold text-[13px] font-bold text-gb-bg-screen shadow-[2px_2px_0_#070a16]">
-                {row.rank}
-              </div>
-            ) : row.rank <= 3 ? (
-              <div className="font-gb-num box-border flex h-[26px] w-[26px] items-center justify-center rounded-[2px] border-2 border-gb-gold text-[13px] font-bold text-gb-gold">
-                {row.rank}
-              </div>
+            {row.rank <= 3 ? (
+              <RankMedal rank={row.rank} />
             ) : (
               <div className="font-gb-num pl-1.5 font-bold text-gb-text-secondary tabular-nums">
                 {row.rank}

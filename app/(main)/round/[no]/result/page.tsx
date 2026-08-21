@@ -159,6 +159,28 @@ export default function ResultPage({
         >
           {perfect && (
             <div className="relative h-[74px] w-[74px]">
+              {/* 인장형 방사 광선 8개 — 링이 사라진 뒤에도 남는 "만점 도장" (image-assets 2-4).
+                  연출은 성취 쪽에만 쏟는다는 톤 가드레일의 적용처다. */}
+              <svg
+                className="absolute -inset-[21px]"
+                width="116"
+                height="116"
+                viewBox="0 0 116 116"
+                fill="none"
+                aria-hidden="true"
+                style={{ animation: "gb-rays-in 0.5s ease-out 0.9s both" }}
+              >
+                <g stroke="#FFD400" strokeWidth="5" strokeLinecap="round">
+                  <line x1="58" y1="4" x2="58" y2="14" />
+                  <line x1="58" y1="102" x2="58" y2="112" />
+                  <line x1="4" y1="58" x2="14" y2="58" />
+                  <line x1="102" y1="58" x2="112" y2="58" />
+                  <line x1="19.8" y1="19.8" x2="26.9" y2="26.9" />
+                  <line x1="89.1" y1="89.1" x2="96.2" y2="96.2" />
+                  <line x1="96.2" y1="19.8" x2="89.1" y2="26.9" />
+                  <line x1="26.9" y1="89.1" x2="19.8" y2="96.2" />
+                </g>
+              </svg>
               <span
                 className="absolute inset-0 rounded-full border-2 border-gb-gold"
                 style={{ animation: "gb-ring-out 1s ease-out 0.2s both" }}
