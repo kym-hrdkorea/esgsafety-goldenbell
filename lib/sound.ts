@@ -58,20 +58,40 @@ export function setSoundEnabled(on: boolean): void {
 }
 
 // ── 배경음악 ──
-// 자동재생 차단 시 첫 사용자 제스처(터치·클릭·키 입력)에서 1회 재시도한다.
+// 자동재생 차단 시 사용자 제스처마다 재시도하고, 재생에 성공하면 해제한다.
+//
+// 이벤트 4종을 함께 쓰는 이유: iOS Safari 등 모바일 브라우저는 pointerdown
+// (터치 시작)을 오디오 허용 제스처로 인정하지 않는 경우가 많다 — 사용자
+// 활성화(user activation)는 touchend·click·keydown에서 부여된다. pointerdown만
+// 걸어두면 휴대폰에서는 화면을 아무리 눌러도 재생이 시작되지 않는다.
+// 같은 탭 안에서 pointerdown 실패 → touchend/click 성공 순으로 이어지도록
+// 성공 전까지 리스너를 유지한다(재시도가 멱등이라 중복 발화 무해).
+// capture: 앱 내부 stopPropagation에 가로막히지 않게 한다.
+const GESTURE_EVENTS = ["pointerdown", "touchend", "click", "keydown"] as const;
 let gestureArmed = false;
+
+function retryOnGesture(): void {
+  audioCtx(); // 제스처 안에서 컨텍스트 잠금 해제 (효과음용)
+  syncBgm(); // 재생 성공 시 disarmGestureRetry()가 호출된다
+}
+
 function armGestureRetry(): void {
   if (gestureArmed || typeof window === "undefined") return;
   gestureArmed = true;
-  const retry = () => {
-    window.removeEventListener("pointerdown", retry);
-    window.removeEventListener("keydown", retry);
-    gestureArmed = false;
-    audioCtx();
-    syncBgm();
-  };
-  window.addEventListener("pointerdown", retry);
-  window.addEventListener("keydown", retry);
+  for (const ev of GESTURE_EVENTS) {
+    window.addEventListener(ev, retryOnGesture, {
+      capture: true,
+      passive: true,
+    });
+  }
+}
+
+function disarmGestureRetry(): void {
+  if (!gestureArmed || typeof window === "undefined") return;
+  gestureArmed = false;
+  for (const ev of GESTURE_EVENTS) {
+    window.removeEventListener(ev, retryOnGesture, { capture: true });
+  }
 }
 
 function syncBgm(): void {
@@ -79,14 +99,16 @@ function syncBgm(): void {
   if (!bgmEl) {
     bgmEl = new Audio();
     bgmEl.loop = true;
+    // 제스처가 오기 전에 파일을 받아 두면 첫 탭에서 지연 없이 시작된다
+    bgmEl.preload = "auto";
   }
   if (loadedBgm !== desiredBgm) {
     bgmEl.src = `/audio/bgm-${desiredBgm}.mp3`;
     loadedBgm = desiredBgm;
   }
   bgmEl.volume = BGM_VOLUME;
-  // 자동재생 차단이면 첫 제스처에서 재시도. 파일 부재(404)는 조용히 무시.
-  void bgmEl.play().catch(() => armGestureRetry());
+  // 자동재생 차단이면 다음 제스처에서 재시도. 파일 부재(404)는 조용히 무시.
+  bgmEl.play().then(disarmGestureRetry).catch(armGestureRetry);
 }
 
 // 화면이 원하는 배경음악을 선언한다. 소리가 켜져 있으면 즉시 전환을 시도한다.
