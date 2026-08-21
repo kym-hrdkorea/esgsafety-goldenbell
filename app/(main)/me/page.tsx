@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { requestBgm } from "@/lib/sound";
+import { CATEGORY_ICONS } from "@/components/CategoryIcons";
 
 type Me = {
   nickname: string;
@@ -88,8 +89,10 @@ export default function MyRecordPage() {
 
   const areas = CATEGORY_LABELS.map(([code, label]) => {
     const c = stats.categories.find((s) => s.category === code);
-    return c ? { label, pct: c.pct } : null;
-  }).filter((a): a is { label: string; pct: number } => a !== null);
+    return c ? { code, label, pct: c.pct } : null;
+  }).filter(
+    (a): a is { code: string; label: string; pct: number } => a !== null
+  );
 
   const started = rounds.filter((r) => r.state !== "locked");
 
@@ -189,9 +192,15 @@ export default function MyRecordPage() {
             </div>
           </div>
           <div className="flex flex-col gap-3 rounded border-[3px] border-gb-border-divider p-3.5">
-            {areas.map((a) => (
+            {areas.map((a) => {
+              const Icon = CATEGORY_ICONS[a.code];
+              return (
               <div key={a.label} className="flex items-center gap-2.5">
-                <span className="w-[92px] text-[14px] font-bold text-gb-text-strong-sub">
+                {/* 아이콘은 중립색으로 둔다 — 성취 신호는 게이지 색이 담당한다 */}
+                <span className="flex text-gb-text-secondary">
+                  {Icon ? <Icon size={18} /> : null}
+                </span>
+                <span className="w-[80px] text-[14px] font-bold text-gb-text-strong-sub">
                   {a.label}
                 </span>
                 <div className="relative h-3 flex-1 overflow-hidden rounded-[2px] bg-gb-bg-block">
@@ -210,7 +219,8 @@ export default function MyRecordPage() {
                   {a.pct}%
                 </span>
               </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}
