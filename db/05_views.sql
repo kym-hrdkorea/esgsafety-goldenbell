@@ -241,7 +241,12 @@ ORDER BY i.anchor_code, i.round_no;
 --    모두 확정한 사람만 포함한다. 일부 응답자는 참여 통계에는 남지만
 --    1차 KPI에서는 제외한다. 시간초과는 is_correct=false로 집계한다.
 CREATE OR REPLACE VIEW v_matched_pre_post AS
-WITH scored AS (
+-- 2026-08-25: 완전대응 기준 쌍 수를 12로 박아두면 문항 구성이 바뀔 때
+-- 이 뷰가 조용히 0행이 된다(KPI 소멸). quiz_item에서 실제 쌍 수를 세어 쓴다.
+WITH pair_count AS (
+  SELECT COUNT(*)::int AS n FROM quiz_item WHERE measure_code ~ '^M\d{2}$'
+),
+scored AS (
   SELECT s.participant_id,
          CASE WHEN i.measure_code ~ '^M\d{2}$'  THEN 'pre'
               WHEN i.measure_code ~ '^M\d{2}P$' THEN 'post' END AS phase,
@@ -263,11 +268,11 @@ agg AS (
   FROM scored GROUP BY participant_id
 ),
 matched AS (
-  SELECT participant_id, pre_n, post_n,
-         ROUND((pre_correct::numeric / 12) * 100, 1) AS pre_pct,
-         ROUND((post_correct::numeric / 12) * 100, 1) AS post_pct
-  FROM agg
-  WHERE pre_n = 12 AND post_n = 12
+  SELECT a.participant_id, a.pre_n, a.post_n,
+         ROUND((a.pre_correct::numeric / NULLIF(pc.n, 0)) * 100, 1) AS pre_pct,
+         ROUND((a.post_correct::numeric / NULLIF(pc.n, 0)) * 100, 1) AS post_pct
+  FROM agg a CROSS JOIN pair_count pc
+  WHERE a.pre_n = pc.n AND a.post_n = pc.n
 )
 SELECT m.participant_id, p.nickname, u.name AS org_unit_name,
        m.pre_n, m.post_n,
@@ -279,12 +284,12 @@ JOIN participant p ON p.id = m.participant_id
 JOIN org_unit    u ON u.id = p.org_unit_id
 ORDER BY gain_pp DESC;
 
--- ⑨ 12쌍 완전대응 성과 요약
+-- ⑨ 완전대응 성과 요약 (쌍 수는 quiz_item에서 유도)
 --    평균은 완전대응 참가자별 정답률의 평균이고, 중앙값·향상자 비율도
 --    같은 참가자 집합에서 계산한다. 표본이 없어도 1행을 반환한다.
 CREATE OR REPLACE VIEW v_matched_summary AS
 SELECT COUNT(*)::int AS matched_n,
-       12::int AS pair_count,
+       (SELECT COUNT(*)::int FROM quiz_item WHERE measure_code ~ '^M\d{2}$') AS pair_count,
        ROUND(AVG(pre_pct), 1) AS pre_avg_pct,
        ROUND(AVG(post_pct), 1) AS post_avg_pct,
        ROUND(AVG(gain_pp), 1) AS mean_gain_pp,
@@ -299,11 +304,13 @@ SELECT COUNT(*)::int AS matched_n,
 FROM v_matched_pre_post;
 
 -- ⑩ 문항쌍별 사전·사후 정답률 (완전대응 참가자 기준)
---    generate_series로 응답자가 없어도 M01~M12 12행을 유지한다.
+--    응답자가 없어도 투입된 측정 코드마다 1행을 유지한다.
 CREATE OR REPLACE VIEW v_measure_pair_stats AS
 WITH pair_codes AS (
-  SELECT 'M' || LPAD(n::text, 2, '0') AS measure_code
-  FROM generate_series(1, 12) AS g(n)
+  -- 실제 투입된 측정 코드만 행으로 만든다(미투입 코드의 빈 행 방지)
+  SELECT DISTINCT regexp_replace(measure_code, 'P$', '') AS measure_code
+  FROM quiz_item
+  WHERE measure_code ~ '^M\d{2}P?$'
 ),
 item_codes AS (
   SELECT regexp_replace(measure_code, 'P$', '') AS measure_code,

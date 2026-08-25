@@ -17,12 +17,15 @@ const postCodes = items
   .filter((item) => /^M\d{2}P$/.test(item.measure_code ?? ""))
   .map((item) => item.measure_code.replace(/P$/, ""))
   .sort();
-expect(preCodes.length === 12, `사전 측정 코드 수: ${preCodes.length} (기대 12)`);
-expect(postCodes.length === 12, `사후 측정 코드 수: ${postCodes.length} (기대 12)`);
+// 2026-08-25 청렴 도입 개편: 측정 9쌍 (M04·M08·M09 미투입)
+expect(preCodes.length === 9, `사전 측정 코드 수: ${preCodes.length} (기대 9)`);
+expect(postCodes.length === 9, `사후 측정 코드 수: ${postCodes.length} (기대 9)`);
 expect(JSON.stringify(preCodes) === JSON.stringify(postCodes), "사전·사후 측정쌍 불일치");
 
 expect(views.includes("CREATE OR REPLACE VIEW v_matched_pre_post"), "완전대응 뷰 누락");
-expect(views.includes("WHERE pre_n = 12 AND post_n = 12"), "12쌍 완전대응 조건 누락");
+// 쌍 수를 quiz_item에서 유도하도록 바뀌었다 — 하드코딩 12가 남아 있으면 안 된다
+expect(views.includes("WHERE a.pre_n = pc.n AND a.post_n = pc.n"), "완전대응 조건 누락");
+expect(!views.includes("WHERE pre_n = 12 AND post_n = 12"), "완전대응 조건에 12가 하드코딩돼 있음");
 expect(views.includes("COALESCE(si.is_correct, false)"), "시간초과 오답 처리 근거 누락");
 expect(views.includes("s.status IN ('completed', 'expired')"), "완료·만료 세션 조건 누락");
 expect(views.includes("CREATE OR REPLACE VIEW v_matched_summary"), "성과 요약 뷰 누락");
