@@ -92,8 +92,8 @@ for (const [name, source] of [
 }
 expect(
   roundSeed.includes("Asia/Seoul = UTC+9") &&
-    roundSeed.includes("2026-08-17 00:00:00+09") &&
-    roundSeed.includes("2026-09-25 23:59:59+09"),
+    roundSeed.includes("2026-09-01 00:00:00+09") &&
+    roundSeed.includes("2026-10-09 23:59:59+09"),
   "회차 일정의 명시적 KST 오프셋 누락"
 );
 expect(

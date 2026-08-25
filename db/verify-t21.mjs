@@ -61,19 +61,20 @@ expect(
   "개시 전 참가자·응시·응답·열람 데이터가 0행이 아님"
 );
 expect(
-  rankingN === 0 || rankingN === 4,
-  `개시 전 순위 스냅샷=${rankingN}, 기대값=첫 Cron 전 0 또는 후 4`
+  rankingN === 0 || rankingN === 3,
+  `개시 전 순위 스냅샷=${rankingN}, 기대값=첫 Cron 전 0 또는 후 3`
 );
 expect(adminN <= 1, `관리자 계정=${adminN}, 기대값=0 또는 1`);
 
 const rankingRows = await rows("ranking_snapshot", "kind,round_no,payload");
 if (rankingRows.length > 0) {
+  // 'total'은 2026-08-25 개편(Q항)으로 적재 중단 — average·department·org_unit 3종
   expect(
     rankingRows
       .map((row) => row.kind)
       .sort()
-      .join(",") === "average,department,org_unit,total",
-    "개시 전 순위 스냅샷 종류가 기준 4종과 다름"
+      .join(",") === "average,department,org_unit",
+    "개시 전 순위 스냅샷 종류가 기준 3종과 다름"
   );
   expect(
     rankingRows.every(
@@ -96,14 +97,17 @@ expect(
   "회차 범위가 1~6이 아님"
 );
 expect(rounds.every((round) => round.prelearning_body?.trim()), "사전학습 본문 누락");
-expect(rounds.every((round) => round.is_published === false), "개시 전 공개 회차 존재");
+// 자동 개방 운영(Q항 확정): is_published=true를 유지하고 개방은 일정이 단독 결정한다
+// (리뷰 A-5). 개시일 수동 publish 작업이 없다.
+expect(rounds.every((round) => round.is_published === true), "회차가 공개 상태가 아님(자동 개방 운영)");
+// 운영 일정 2026-09-01 ~ 10-09 (KST) — db/03_seed_rounds.sql과 동일 값(UTC 표기)
 const expectedSchedule = [
-  ["2026-08-16T15:00:00.000Z", "2026-08-21T14:59:59.000Z"],
-  ["2026-08-23T15:00:00.000Z", "2026-08-28T14:59:59.000Z"],
-  ["2026-08-30T15:00:00.000Z", "2026-09-04T14:59:59.000Z"],
+  ["2026-08-31T15:00:00.000Z", "2026-09-04T14:59:59.000Z"],
   ["2026-09-06T15:00:00.000Z", "2026-09-11T14:59:59.000Z"],
   ["2026-09-13T15:00:00.000Z", "2026-09-18T14:59:59.000Z"],
   ["2026-09-20T15:00:00.000Z", "2026-09-25T14:59:59.000Z"],
+  ["2026-09-27T15:00:00.000Z", "2026-10-02T14:59:59.000Z"],
+  ["2026-10-04T15:00:00.000Z", "2026-10-09T14:59:59.000Z"],
 ];
 for (const round of rounds) {
   const expected = expectedSchedule[round.round_no - 1];
@@ -136,16 +140,17 @@ expect(
   [...Array(6)].every((_, index) => perRound.get(index + 1) === 12),
   "회차당 12문항 불일치"
 );
+// 2026-08-25 청렴 개편(안전 43 : 청렴 29) 반영 — tasks/최종문항구성-2026-08-25.md
 expect(
   types.get("OX") === 14 &&
     types.get("SHORT") === 1 &&
-    types.get("MC4") === 55 &&
-    types.get("ORDER") === 2,
+    types.get("MC4") === 53 &&
+    types.get("ORDER") === 4,
   `유형 분포 불일치: ${JSON.stringify(Object.fromEntries(types))}`
 );
 expect(
-  levels.get("L1") === 26 &&
-    levels.get("L2") === 35 &&
+  levels.get("L1") === 22 &&
+    levels.get("L2") === 39 &&
     levels.get("L3") === 11,
   `난이도 분포 불일치: ${JSON.stringify(Object.fromEntries(levels))}`
 );
@@ -156,7 +161,8 @@ expect(
 
 const preN = items.filter((item) => /^M(?:0[1-9]|1[0-2])$/.test(item.measure_code ?? "")).length;
 const postN = items.filter((item) => /^M(?:0[1-9]|1[0-2])P$/.test(item.measure_code ?? "")).length;
-expect(preN === 12 && postN === 12, `측정문항=${preN}+${postN}, 기대값=12+12`);
+// 측정쌍은 청렴 개편으로 12→9쌍 (M01·M02·M03·M05·M06·M07·M10·M11·M12)
+expect(preN === 9 && postN === 9, `측정문항=${preN}+${postN}, 기대값=9+9`);
 const measurePairs = new Map();
 for (const item of items.filter((row) => /^M(?:0[1-9]|1[0-2])P?$/.test(row.measure_code ?? ""))) {
   const code = item.measure_code.replace(/P$/, "");
@@ -164,7 +170,7 @@ for (const item of items.filter((row) => /^M(?:0[1-9]|1[0-2])P?$/.test(row.measu
   pair.push(item);
   measurePairs.set(code, pair);
 }
-expect(measurePairs.size === 12, `측정 쌍=${measurePairs.size}, 기대값=12`);
+expect(measurePairs.size === 9, `측정 쌍=${measurePairs.size}, 기대값=9`);
 for (const [code, pair] of measurePairs) {
   expect(
     pair.length === 2 && pair.every((item) => item.item_type === "MC4") &&
@@ -178,16 +184,21 @@ const [summary, pairStats, participation] = await Promise.all([
   rows("v_measure_pair_stats"),
   rows("v_participation"),
 ]);
-expect(summary.length === 1 && summary[0].matched_n === 0 && summary[0].pair_count === 12,
+expect(summary.length === 1 && summary[0].matched_n === 0 && summary[0].pair_count === 9,
   "성과 요약 뷰 초기값 불일치");
-expect(pairStats.length === 12, `문항쌍 통계=${pairStats.length}, 기대값=12`);
+expect(pairStats.length === 9, `문항쌍 통계=${pairStats.length}, 기대값=9`);
 expect(participation.length === 6, `참여 지표=${participation.length}, 기대값=6`);
 
 const { data: minRounds, error: minRoundsError } = await db.rpc("fn_min_rounds");
 if (minRoundsError) throw new Error(`fn_min_rounds: ${minRoundsError.message}`);
 expect(minRounds === 0, `개시 전 fn_min_rounds=${minRounds}, 기대값=0`);
 
+// 참여율 분모 함수(Q항) — 개시 전(opens_at 미래)에는 개방 회차 0
+const { data: openRounds, error: openRoundsError } = await db.rpc("fn_open_rounds");
+if (openRoundsError) throw new Error(`fn_open_rounds: ${openRoundsError.message}`);
+expect(openRounds === 0, `개시 전 fn_open_rounds=${openRounds}, 기대값=0`);
+
 console.log("T21 실DB 검증 통과");
-console.log("회차 6 / 문항 72 / 회차당 12 / 측정 12+12 / 앵커 회차당 2 / 사전학습 6");
-console.log(`조직 4/50/193 / 참가자 활동 데이터 0 / 빈 순위 스냅샷 ${rankingN} / 관리자 ${adminN} / is_published=false 6`);
-console.log("성과 요약·문항쌍·참여 뷰 및 fn_min_rounds 정상");
+console.log("회차 6 / 문항 72 / 회차당 12 / 측정 9+9 / 앵커 회차당 2 / 사전학습 6");
+console.log(`조직 4/50/193 / 참가자 활동 데이터 0 / 빈 순위 스냅샷 ${rankingN} / 관리자 ${adminN} / is_published=true 6(자동 개방)`);
+console.log("성과 요약·문항쌍·참여 뷰 및 fn_min_rounds·fn_open_rounds 정상");
