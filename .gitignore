@@ -28,3 +28,8 @@ next-env.d.ts
 # service role 로 실DB를 조작하므로 저장소에 남으면 안 된다.
 /.t*-verify.mjs
 /.pilot-*.json
+
+# DB 백업 — 커밋 금지.
+# participant 행에 사번·휴대폰 번호·비밀번호 해시가 들어간다(규칙 10).
+# 저장소가 공개라 한 번 올라가면 이력에서 지우기 어렵다. 로컬에만 둔다.
+/backup/
