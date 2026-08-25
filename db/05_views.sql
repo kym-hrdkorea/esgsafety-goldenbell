@@ -61,6 +61,20 @@ LANGUAGE sql STABLE AS $$
 $$;
 
 -- ---------------------------------------------------------------------
+-- 개방 회차 수 (부서 참여율의 분모). fn_min_rounds()와 대칭 구조 — C항과
+-- 같은 단일 출처 원칙: API·뷰·검증 스크립트는 이 함수만 쓴다.
+-- 개방 = 공개되었고 열림 시각이 지난 회차. 종료(closes_at) 여부는 무관 —
+-- 이미 닫힌 회차도 응시 기회가 있었으므로 분모에 포함한다(addendum Q항).
+-- ---------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION fn_open_rounds() RETURNS int
+LANGUAGE sql STABLE AS $$
+  SELECT count(*)::int
+  FROM quiz_round r
+  WHERE r.is_published
+    AND r.opens_at <= now();
+$$;
+
+-- ---------------------------------------------------------------------
 -- ① 전체 회차 누적 순위 (N항: 포인트 기준)
 -- ---------------------------------------------------------------------
 CREATE OR REPLACE VIEW v_rank_total AS
@@ -129,23 +143,78 @@ ORDER BY rank;
 
 -- ---------------------------------------------------------------------
 -- ④ 부서 순위 (결정④: 참여자 3명 이상)
---    지표는 평균 포인트(N항). 정원 데이터가 없으므로 참여율은 쓰지 않는다.
+--    종합점수(0~100) = (평균 포인트 ÷ 회차 만점 × 100) × 0.5
+--                    + (평균 참여율 × 100) × 0.5   — addendum Q항(2026-08-25)
+--    · 평균 포인트 : 세션(참가자×회차) 단위 AVG(points) — 기존과 동일
+--    · 평균 참여율 : 참가자 단위 AVG(응시 회차 수 ÷ 개방 회차 수)
+--                    — 집계 층위가 달라 CTE를 참가자→부서 2단으로 나눈다
+--    · 회차 만점   : items_per_round × (point_base + point_time_bonus_max)
+--                    — app_config에서 유도(규칙 7)
+--    · 가중치 0.5/0.5는 운영자 확정 정책 상수 — app_config로 빼지 않는다
+--    · 종합점수는 표시용 반올림값(avg_points)이 아니라 비반올림 원값으로
+--      계산한다 — 반올림 후 재계산하면 표시값과 순위 근거가 어긋난다
+--    · 회차 비공개 전환 등으로 응시 수 > 개방 수가 되면 참여율은 100% 클램프
 -- ---------------------------------------------------------------------
 CREATE OR REPLACE VIEW v_rank_department AS
-WITH agg AS (
+WITH cfg AS (
+  SELECT (SELECT (value)::int FROM app_config WHERE key = 'items_per_round')
+         * ( (SELECT (value)::int FROM app_config WHERE key = 'point_base')
+           + (SELECT (value)::int FROM app_config WHERE key = 'point_time_bonus_max') )
+           AS round_max_points,
+         fn_open_rounds() AS open_rounds
+),
+-- [1단] 참가자 단위: 응시 회차 수 → 참여율.
+--       개방 회차 0이면 NULL(LEAST는 NULL을 무시하므로 CASE로 명시 처리).
+per_participant AS (
   SELECT p.department_id,
-         COUNT(DISTINCT r.participant_id) AS participants,
-         COUNT(*)                         AS sessions,
-         ROUND(AVG(r.pct), 1)             AS avg_pct,
-         ROUND(AVG(r.points), 1)          AS avg_points
+         r.participant_id,
+         CASE WHEN c.open_rounds > 0
+              THEN LEAST(COUNT(*)::numeric / c.open_rounds, 1)
+              ELSE NULL END AS participation
+  FROM v_round_score r
+  JOIN participant p ON p.id = r.participant_id
+  CROSS JOIN cfg c
+  GROUP BY p.department_id, r.participant_id, c.open_rounds
+),
+-- [2단-a] 부서 단위: 참가자 수 · 평균 참여율 (참가자 층위)
+dept_participation AS (
+  SELECT department_id,
+         COUNT(*)           AS participants,
+         AVG(participation) AS avg_participation
+  FROM per_participant
+  GROUP BY department_id
+),
+-- [2단-b] 부서 단위: 평균 포인트 (세션 층위 — 기존 산식 유지)
+dept_points AS (
+  SELECT p.department_id,
+         COUNT(*)                AS sessions,
+         ROUND(AVG(r.pct), 1)    AS avg_pct,
+         ROUND(AVG(r.points), 1) AS avg_points,
+         AVG(r.points)           AS avg_points_raw
   FROM v_round_score r
   JOIN participant p ON p.id = r.participant_id
   GROUP BY p.department_id
+),
+agg AS (
+  SELECT dp.department_id,
+         pt.sessions, pt.avg_pct, pt.avg_points,
+         dp.participants,
+         ROUND(dp.avg_participation * 100, 1) AS avg_participation_pct,
+         ROUND(
+             (pt.avg_points_raw / NULLIF(c.round_max_points, 0) * 100) * 0.5
+           + (dp.avg_participation * 100) * 0.5
+         , 1) AS composite_score
+  FROM dept_participation dp
+  JOIN dept_points pt ON pt.department_id = dp.department_id
+  CROSS JOIN cfg c
 )
-SELECT RANK() OVER (ORDER BY a.avg_points DESC, a.participants DESC) AS rank,
+SELECT RANK() OVER (ORDER BY a.composite_score DESC, a.participants DESC) AS rank,
        d.name AS department_name, u.name AS org_unit_name,
        a.participants, a.sessions, a.avg_pct, d.id AS department_id,
-       a.avg_points
+       a.avg_points,
+       -- 기존 8컬럼 순서·타입 유지, 신규 2컬럼은 말미 추가(REPLACE VIEW 제약)
+       a.composite_score,
+       a.avg_participation_pct
 FROM agg a
 JOIN department d ON d.id = a.department_id
 JOIN org_unit   u ON u.id = d.org_unit_id
@@ -155,22 +224,61 @@ ORDER BY rank;
 
 -- ---------------------------------------------------------------------
 -- ⑤ 소속 순위 (선택 노출. 부서 순위가 3명 미만으로 대부분 제외될 경우 대안)
---    지표는 평균 포인트(N항). F항에 따라 refresh-rankings가 함께 적재한다.
+--    F항에 따라 refresh-rankings가 함께 적재한다.
+--    F항 대안 경로 — 산식이 같아야 대안이므로 부서와 동일한 종합점수 적용.
 -- ---------------------------------------------------------------------
 CREATE OR REPLACE VIEW v_rank_org_unit AS
-WITH agg AS (
+WITH cfg AS (
+  SELECT (SELECT (value)::int FROM app_config WHERE key = 'items_per_round')
+         * ( (SELECT (value)::int FROM app_config WHERE key = 'point_base')
+           + (SELECT (value)::int FROM app_config WHERE key = 'point_time_bonus_max') )
+           AS round_max_points,
+         fn_open_rounds() AS open_rounds
+),
+per_participant AS (
   SELECT p.org_unit_id,
-         COUNT(DISTINCT r.participant_id) AS participants,
-         ROUND(AVG(r.pct), 1)             AS avg_pct,
-         ROUND(AVG(r.points), 1)          AS avg_points
+         r.participant_id,
+         CASE WHEN c.open_rounds > 0
+              THEN LEAST(COUNT(*)::numeric / c.open_rounds, 1)
+              ELSE NULL END AS participation
+  FROM v_round_score r
+  JOIN participant p ON p.id = r.participant_id
+  CROSS JOIN cfg c
+  GROUP BY p.org_unit_id, r.participant_id, c.open_rounds
+),
+unit_participation AS (
+  SELECT org_unit_id,
+         COUNT(*)           AS participants,
+         AVG(participation) AS avg_participation
+  FROM per_participant
+  GROUP BY org_unit_id
+),
+unit_points AS (
+  SELECT p.org_unit_id,
+         ROUND(AVG(r.pct), 1)    AS avg_pct,
+         ROUND(AVG(r.points), 1) AS avg_points,
+         AVG(r.points)           AS avg_points_raw
   FROM v_round_score r
   JOIN participant p ON p.id = r.participant_id
   GROUP BY p.org_unit_id
+),
+agg AS (
+  SELECT up.org_unit_id, pt.avg_pct, pt.avg_points, up.participants,
+         ROUND(up.avg_participation * 100, 1) AS avg_participation_pct,
+         ROUND(
+             (pt.avg_points_raw / NULLIF(c.round_max_points, 0) * 100) * 0.5
+           + (up.avg_participation * 100) * 0.5
+         , 1) AS composite_score
+  FROM unit_participation up
+  JOIN unit_points pt ON pt.org_unit_id = up.org_unit_id
+  CROSS JOIN cfg c
 )
-SELECT RANK() OVER (ORDER BY a.avg_points DESC, a.participants DESC) AS rank,
+SELECT RANK() OVER (ORDER BY a.composite_score DESC, a.participants DESC) AS rank,
        u.name AS org_unit_name, c.name AS category_name,
        a.participants, a.avg_pct, u.id AS org_unit_id,
-       a.avg_points
+       a.avg_points,
+       a.composite_score,
+       a.avg_participation_pct
 FROM agg a
 JOIN org_unit     u ON u.id = a.org_unit_id
 JOIN org_category c ON c.code = u.category_code
@@ -237,9 +345,10 @@ GROUP BY i.round_no, i.anchor_code
 ORDER BY i.anchor_code, i.round_no;
 
 -- ⑧ 동일인 대조 사전·사후 (★ 캠페인 핵심 성과지표)
---    사전 M01~M12(1·2회차) / 사후 M01P~M12P(5·6회차) 12쌍을
---    모두 확정한 사람만 포함한다. 일부 응답자는 참여 통계에는 남지만
---    1차 KPI에서는 제외한다. 시간초과는 is_correct=false로 집계한다.
+--    사전 MNN(1·2회차) / 사후 MNNP(5·6회차) 쌍을 모두 확정한 사람만 포함한다.
+--    쌍 수는 quiz_item에서 동적으로 센다(2026-08-25 청렴 개편 기준 9쌍).
+--    일부 응답자는 참여 통계에는 남지만 1차 KPI에서는 제외한다.
+--    시간초과는 is_correct=false로 집계한다.
 CREATE OR REPLACE VIEW v_matched_pre_post AS
 -- 2026-08-25: 완전대응 기준 쌍 수를 12로 박아두면 문항 구성이 바뀔 때
 -- 이 뷰가 조용히 0행이 된다(KPI 소멸). quiz_item에서 실제 쌍 수를 세어 쓴다.

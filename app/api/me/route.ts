@@ -31,10 +31,11 @@ export async function GET(req: NextRequest) {
       .in("status", ["completed", "expired"]);
     if (sErr) throw new Error(sErr.message);
 
-    // 내 순위 1건은 뷰 직접 조회 허용 (addendum B항). 포인트 기준(N항).
+    // 내 순위 1건은 뷰 직접 조회 허용 (addendum B항). 평균 포인트 기준(Q항 —
+    // 포상의 종합 개인 기준이 평균이므로 홈 카드도 같은 기준을 보여준다).
     // 최소 회차 미달·미응시면 행이 없어 null — 홈 요약 카드는 '-'로 표시한다.
     const { data: rankRow, error: rErr } = await db
-      .from("v_rank_total")
+      .from("v_rank_average")
       .select("rank")
       .eq("participant_id", pid)
       .maybeSingle();
@@ -48,7 +49,7 @@ export async function GET(req: NextRequest) {
       departmentName: dept.name,
       totalScore: sessions.reduce((sum, s) => sum + s.score, 0),
       roundsTaken: sessions.length,
-      totalRank: rankRow?.rank ?? null,
+      averageRank: rankRow?.rank ?? null,
     });
   } catch (err) {
     console.error("[me]", err instanceof Error ? err.message : err);

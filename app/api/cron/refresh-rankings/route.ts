@@ -59,26 +59,9 @@ async function refresh() {
   const nowIso = new Date().toISOString();
   const refreshed: string[] = [];
 
-  // ① 전체 누적 (포인트 기준, N항)
-  const { data: total, error: tErr } = await db
-    .from("v_rank_total")
-    .select("rank, nickname, org_unit_name, total_points, rounds_taken")
-    .lte("rank", maxRows)
-    .order("rank");
-  if (tErr) throw new Error(tErr.message);
-  await upsertSnapshot(
-    "total",
-    null,
-    (total ?? []).map((r) => ({
-      rank: Number(r.rank),
-      nickname: r.nickname,
-      orgUnitName: r.org_unit_name,
-      totalPoints: Number(r.total_points),
-      roundsTaken: Number(r.rounds_taken),
-    })),
-    nowIso
-  );
-  refreshed.push("total");
+  // '전체 누적'(kind='total')은 적재하지 않는다 — 포상 기준(평균)과 어긋나
+  // 2026-08-25 개편에서 제거했다(addendum Q항). 잔여 행은 배포 후 1회 DELETE
+  // (db/10_views_migration_2026-08-26.sql 하단 DML 블록).
 
   // ③ 평균 포인트
   const { data: avg, error: aErr } = await db
@@ -101,10 +84,12 @@ async function refresh() {
   );
   refreshed.push("average");
 
-  // ④ 부서 (참여자 3명 이상 — 뷰가 거른다)
+  // ④ 부서 (참여자 3명 이상 — 뷰가 거른다. 순위 기준은 종합점수, Q항)
   const { data: dept, error: dErr } = await db
     .from("v_rank_department")
-    .select("rank, department_id, department_name, org_unit_name, participants, avg_points")
+    .select(
+      "rank, department_id, department_name, org_unit_name, participants, avg_points, composite_score, avg_participation_pct"
+    )
     .lte("rank", maxRows)
     .order("rank");
   if (dErr) throw new Error(dErr.message);
@@ -120,15 +105,19 @@ async function refresh() {
       orgUnitName: r.org_unit_name,
       participants: Number(r.participants),
       avgPoints: Number(r.avg_points),
+      compositeScore: Number(r.composite_score),
+      avgParticipationPct: Number(r.avg_participation_pct),
     })),
     nowIso
   );
   refreshed.push("department");
 
-  // ⑤ 소속 — 적재하되 대시보드 미노출 (addendum F항)
+  // ⑤ 소속 — 적재하되 대시보드 미노출 (addendum F항. 산식은 부서와 동일, Q항)
   const { data: unit, error: uErr } = await db
     .from("v_rank_org_unit")
-    .select("rank, org_unit_name, category_name, participants, avg_points")
+    .select(
+      "rank, org_unit_name, category_name, participants, avg_points, composite_score, avg_participation_pct"
+    )
     .lte("rank", maxRows)
     .order("rank");
   if (uErr) throw new Error(uErr.message);
@@ -141,6 +130,8 @@ async function refresh() {
       categoryName: r.category_name,
       participants: Number(r.participants),
       avgPoints: Number(r.avg_points),
+      compositeScore: Number(r.composite_score),
+      avgParticipationPct: Number(r.avg_participation_pct),
     })),
     nowIso
   );

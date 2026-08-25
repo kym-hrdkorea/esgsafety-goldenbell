@@ -9,20 +9,26 @@ type Dashboard = {
   me: {
     nickname: string;
     departmentId: number;
-    totalScore: number;
-    totalPoints: number;
-    roundsTaken: number;
-    totalRank: number | null;
+    averageRank: number | null;
     departmentRank: number | null;
     rankEligible: boolean;
     minRoundsRequired: number;
     rankedParticipants: number;
     rankedDepartments: number;
   };
-  total: { rank: number; nickname: string; orgUnitName: string; totalPoints: number; roundsTaken: number }[];
   average: { rank: number; nickname: string; orgUnitName: string; avgPoints: number; roundsTaken: number }[];
-  // departmentId는 구 스냅샷(갱신 전)에 없을 수 있다 — 배지 판정에서 optional로 다룬다
-  department: { rank: number; departmentId?: number; departmentName: string; orgUnitName: string; participants: number; avgPoints: number }[];
+  // departmentId·compositeScore·avgParticipationPct는 구 스냅샷(갱신 전)에 없을 수
+  // 있다 — 배지 판정·종합점수 표기에서 optional로 다룬다
+  department: {
+    rank: number;
+    departmentId?: number;
+    departmentName: string;
+    orgUnitName: string;
+    participants: number;
+    avgPoints: number;
+    compositeScore?: number;
+    avgParticipationPct?: number;
+  }[];
   computedAt: string | null;
   visibleRows: number;
 };
@@ -41,20 +47,19 @@ type RoundRankRow = {
   pct: number;
 };
 
-type TabKey = "total" | "round" | "average" | "department";
+// 포상 카테고리와 1:1 — 주간 개인(회차별) / 종합 개인(평균) / 종합 부서 (Q항, 2026-08-25)
+type TabKey = "round" | "average" | "department";
 
 const TABS: { key: TabKey; label: string }[] = [
-  { key: "total", label: "전체 누적" },
-  { key: "round", label: "회차별" },
-  { key: "average", label: "평균 포인트" },
-  { key: "department", label: "부서" },
+  { key: "round", label: "주간 우수자" },
+  { key: "average", label: "전체 우수자" },
+  { key: "department", label: "우수 부서" },
 ];
 
 const HEADERS: Record<TabKey, [string, string, string, string]> = {
-  total: ["순위", "닉네임", "소속", "포인트"],
   round: ["순위", "닉네임", "소속", "포인트"],
   average: ["순위", "닉네임", "소속", "평균 포인트"],
-  department: ["순위", "부서", "소속", "평균 포인트"],
+  department: ["순위", "부서", "소속", "종합점수"],
 };
 
 // "07.30 14:00 기준" — 표시 전용 Asia/Seoul 변환 (판정은 항상 서버)
@@ -71,13 +76,13 @@ function formatComputedAt(iso: string): string {
   return `${get("month")}.${get("day")} ${get("hour")}:${get("minute")} 기준`;
 }
 
-// 대시보드: 내 현황 카드 2장 + 순위 4종 탭 (business-rules 5.2, design/mocks/대시보드)
+// 대시보드: 내 현황 카드 2장 + 순위 3종 탭 (business-rules 5.2, design/mocks/대시보드)
 export default function DashboardPage() {
   const router = useRouter();
   const [dash, setDash] = useState<Dashboard | null>(null);
   const [rounds, setRounds] = useState<RoundRow[] | null>(null);
   const [blocked, setBlocked] = useState<string | null>(null);
-  const [tab, setTab] = useState<TabKey>("total");
+  const [tab, setTab] = useState<TabKey>("round");
   const [selectedRound, setSelectedRound] = useState<number | null>(null);
   const [roundCache, setRoundCache] = useState<Record<number, RoundRankRow[]>>({});
 
@@ -163,42 +168,43 @@ export default function DashboardPage() {
   const showMinRoundsNotice = me.minRoundsRequired > 0 && !me.rankEligible;
 
   const rows: RankRow[] =
-    tab === "total"
-      ? dash.total.map((r) => ({
+    tab === "average"
+      ? dash.average.map((r) => ({
           rank: r.rank,
           name: r.nickname,
           sub: r.orgUnitName,
-          value: r.totalPoints.toLocaleString("ko-KR"),
+          value: r.avgPoints.toFixed(1),
           isMe: r.nickname === me.nickname,
         }))
-      : tab === "average"
-        ? dash.average.map((r) => ({
+      : tab === "department"
+        ? dash.department.map((r) => ({
             rank: r.rank,
-            name: r.nickname,
+            name: r.departmentName,
+            // 동명 부서가 108개라 이름만으로는 어느 행이 내 부서인지 구분할 수 없다.
+            // 다른 2개 탭과 동일하게 sub 열에 소속명을 표시한다.
             sub: r.orgUnitName,
-            value: r.avgPoints.toFixed(1),
-            isMe: r.nickname === me.nickname,
+            // 순위 기준은 종합점수(Q항). 구 스냅샷(산식 개편 전)에는 없어 평균으로 폴백.
+            value:
+              r.compositeScore != null
+                ? r.compositeScore.toFixed(1)
+                : r.avgPoints.toFixed(1),
+            // 무엇으로 순위가 갈렸는지 보이도록 구성 요소를 보조 표기한다 (copy.md)
+            detail:
+              r.compositeScore != null && r.avgParticipationPct != null
+                ? `평균 ${r.avgPoints.toFixed(1)}P · 참여율 ${Math.round(r.avgParticipationPct)}%`
+                : undefined,
+            // 구 스냅샷(departmentId 부재)에서는 배지를 붙이지 않는다 — 틀린 배지보다 낫다
+            isMe: r.departmentId != null && r.departmentId === me.departmentId,
           }))
-        : tab === "department"
-          ? dash.department.map((r) => ({
+        : (selectedRound !== null ? (roundCache[selectedRound] ?? []) : []).map(
+            (r) => ({
               rank: r.rank,
-              name: r.departmentName,
-              // 동명 부서가 108개라 이름만으로는 어느 행이 내 부서인지 구분할 수 없다.
-              // 다른 3개 탭과 동일하게 sub 열에 소속명을 표시한다.
+              name: r.nickname,
               sub: r.orgUnitName,
-              value: r.avgPoints.toFixed(1),
-              // 구 스냅샷(departmentId 부재)에서는 배지를 붙이지 않는다 — 틀린 배지보다 낫다
-              isMe: r.departmentId != null && r.departmentId === me.departmentId,
-            }))
-          : (selectedRound !== null ? (roundCache[selectedRound] ?? []) : []).map(
-              (r) => ({
-                rank: r.rank,
-                name: r.nickname,
-                sub: r.orgUnitName,
-                value: r.points.toLocaleString("ko-KR"),
-                isMe: r.nickname === me.nickname,
-              })
-            );
+              value: r.points.toLocaleString("ko-KR"),
+              isMe: r.nickname === me.nickname,
+            })
+          );
 
   const roundLoading =
     tab === "round" && selectedRound !== null && !(selectedRound in roundCache);
@@ -223,10 +229,10 @@ export default function DashboardPage() {
           <div className="text-[12px] font-bold text-gb-text-secondary">
             내 순위
           </div>
-          {me.totalRank !== null ? (
+          {me.averageRank !== null ? (
             <div className="font-gb-num flex items-baseline gap-0.5 font-bold tabular-nums">
               <span className="text-[30px] leading-none text-gb-yellow">
-                {me.totalRank}
+                {me.averageRank}
               </span>
               <span className="text-[14px] text-gb-text-secondary">위</span>
               <span className="ml-[5px] text-[14px] text-gb-text-secondary">
@@ -267,8 +273,8 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* 순위 4종 탭 */}
-      <div className="grid grid-cols-4 gap-1.5">
+      {/* 순위 3종 탭 — 포상 카테고리와 1:1 */}
+      <div className="grid grid-cols-3 gap-1.5">
         {TABS.map((t) => (
           <button
             key={t.key}
@@ -285,7 +291,7 @@ export default function DashboardPage() {
         ))}
       </div>
 
-      {/* 회차 선택 (회차별 탭) */}
+      {/* 회차 선택 (주간 우수자 탭) */}
       {tab === "round" && startedRounds.length > 0 && (
         <div className="flex flex-wrap gap-1.5">
           {startedRounds.map((r) => (
@@ -306,8 +312,9 @@ export default function DashboardPage() {
       )}
 
       {tab === "department" && (
-        <div className="-mb-1 px-0.5 text-[13px] text-gb-text-secondary">
-          참여자 3명 이상인 부서만 표시됩니다
+        <div className="-mb-1 flex flex-col gap-0.5 px-0.5 text-[13px] text-gb-text-secondary">
+          <span>참여자 3명 이상인 부서만 표시됩니다</span>
+          <span>종합점수 = 평균 포인트 50% + 참여율 50%</span>
         </div>
       )}
 

@@ -8,6 +8,9 @@ export type RankRow = {
   sub: string;
   value: string;
   isMe: boolean;
+  // 값의 구성 요소 보조 표기(우수 부서 탭: `평균 {avgPoints}P · 참여율 {pct}%`).
+  // 행 grid의 암시적 2행(2~4열 스팬)으로 렌더된다 — 열 폭·GRID는 그대로다.
+  detail?: string;
 };
 
 type Props = {
@@ -140,6 +143,11 @@ export default function RankTable({
             <div className="font-gb-num text-right font-bold text-gb-yellow tabular-nums">
               {row.value}
             </div>
+            {row.detail && (
+              <div className="font-gb-num col-span-3 col-start-2 text-[12px] text-gb-text-secondary tabular-nums">
+                {row.detail}
+              </div>
+            )}
           </div>
         ))}
       </div>

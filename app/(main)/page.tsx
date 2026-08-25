@@ -13,7 +13,7 @@ type Me = {
   departmentName: string;
   totalScore: number;
   roundsTaken: number;
-  totalRank: number | null;
+  averageRank: number | null;
 };
 
 type RoundRow = {
@@ -146,9 +146,9 @@ export default function HomePage() {
           </div>
           <div className="flex items-baseline gap-px">
             <span className="font-gb-num text-[24px] leading-[1.1] font-bold text-gb-text-primary tabular-nums">
-              {me.totalRank ?? "-"}
+              {me.averageRank ?? "-"}
             </span>
-            {me.totalRank !== null && (
+            {me.averageRank !== null && (
               <span className="text-[12px] text-gb-text-dim">위</span>
             )}
           </div>
