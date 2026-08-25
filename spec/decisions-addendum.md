@@ -31,10 +31,10 @@
 
 원래 규칙의 목적은 "요청마다 전체 순위 집계가 도는 것"을 막는 것이었다. 그 근거는 목요일 1일 개방 기준 피크 38 req/s였는데, **월~금 5일 개방으로 변경되면서 실측 피크가 1 req/s 미만**으로 떨어졌다. 본인 순위 1건 계산은 이 부하에서 문제가 되지 않는다.
 
-- `GET /api/dashboard`의 `me.totalRank` / `me.departmentRank` → `v_rank_total` / `v_rank_department`에서 본인 행만 조회
+- `GET /api/dashboard`의 `me.averageRank` / `me.departmentRank` → `v_rank_average` / `v_rank_department`에서 본인 행만 조회 (Q항 개정 — 원래 `me.totalRank`/`v_rank_total`)
 - `GET /rounds/[no]/result`의 `roundRank` → `v_rank_round`에서 본인 행만 조회
-- 순위 목록 4종(`total`/`round`/`average`/`department`)은 **여전히 snapshot만** 읽는다
-- 본인이 최소 회차 미달이면 `totalRank: null`, `rankEligible: false`로 반환하고
+- 순위 목록 3종(`round`/`average`/`department`)은 **여전히 snapshot만** 읽는다 (Q항 개정 — 원래 `total` 포함 4종)
+- 본인이 최소 회차 미달이면 `averageRank: null`, `rankEligible: false`로 반환하고
   화면에는 `3회 이상 참여하면 순위에 반영됩니다`를 표시한다
 
 `ranking_snapshot.payload`에 전체 순위를 담는 방식은 쓰지 않는다. 불필요하게 복잡하다.
@@ -459,3 +459,36 @@ UPDATE participant
 `app/api/admin/export/[kind]/route.ts`(scores CSV 휴대폰 열), `db/01_schema.sql`
 (phone 컬럼 — 실DB에는 `ALTER TABLE participant ADD COLUMN phone text` 적용 완료),
 `design/copy.md`·`spec/api-contract.md`·`decisions.md`·`CLAUDE.md` 규칙 10.
+
+---
+
+## Q. 포상 기준 반영 — 대시보드 3종 재편·부서 종합점수 (2026-08-25 확정)
+
+**결정**: 운영 계획서(ESG안전센터)의 우수자 선정 기준에 맞춰 ① 대시보드 탭을 포상
+카테고리와 1:1인 3종(`주간 우수자`=회차별 / `전체 우수자`=평균 / `우수 부서`=부서)으로
+재편하고 '전체 누적' 탭을 제거한다. ② 부서 순위 지표를 평균 포인트 단독에서
+**종합점수 = (평균 포인트 ÷ 회차 만점 × 100) × 0.5 + (평균 참여율 × 100) × 0.5**로
+바꾼다. ③ 홈·대시보드의 '내 순위'는 평균 포인트 기준(`v_rank_average`)으로 전환한다
+(`totalRank` → `averageRank` 개명).
+
+**참여율 부활 근거**: decisions #17이 참여율을 폐기한 사유는 분모(부서 정원) 미수집이었다.
+운영자가 분모를 **개방 회차 수**(is_published AND opens_at <= now, `fn_open_rounds()`
+단일 출처 — C항과 같은 원칙)로 재정의해 폐기 사유가 해소됐다. 정원 데이터는 여전히
+수집하지 않는다.
+
+**확정 파라미터**: 가중치 50:50은 뷰 산식 상수(정책 상수 — app_config로 빼지 않아
+런타임 임의 변경을 차단). 회차 만점은 app_config 3키(items_per_round·point_base·
+point_time_bonus_max) 유도. `min_participants_for_dept`(3) 유지. 참여율은 100% 클램프.
+동점 시 참여자 수 많은 쪽 우선. `v_rank_org_unit`(F항 대안 경로)도 동일 산식 적용 —
+대안 경로는 산식이 같아야 대안이다.
+
+**snapshot 정리**: cron의 `total` 적재를 중단하고 잔여 `kind='total'` 행은 신코드 배포 후
+1회 DELETE(적재 중단만 하면 round 외 kind는 삭제 경로가 없어 영구 잔류). `v_rank_total`
+뷰 자체는 유지(DROP은 불필요한 DDL).
+
+수정한 파일: `db/05_views.sql`(fn_open_rounds 신설, v_rank_department·v_rank_org_unit
+교체 — `db/10_views_migration_2026-08-26.sql`로 실DB 적용), `app/api/cron/refresh-rankings/
+route.ts`, `app/api/dashboard/route.ts`, `app/api/me/route.ts`, `app/(main)/page.tsx`,
+`app/(main)/dashboard/page.tsx`, `components/dashboard/RankTable.tsx`, `design/copy.md`,
+`spec/business-rules.md` 5장, `spec/api-contract.md`, `decisions.md` #13·16·17,
+`db/validate-t20.mjs`, `db/verify-t21.mjs`, `db/verify-dept-rank.mjs`(신규 대조 검증기).

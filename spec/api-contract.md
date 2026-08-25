@@ -52,8 +52,9 @@ err  401 VERIFICATION_FAILED, 429 TOO_MANY_REQUESTS, 400 VALIDATION
 - 응답 시간 하한 700ms — 성공·실패·검증오류·과다요청 전 경로에 적용(타이밍 채널 차단).
 
 ### `POST /api/auth/logout` → `204`
-### `GET /api/me` → `{ nickname, orgUnitName, departmentName, totalScore, roundsTaken, totalRank }`
-- `totalRank` = 포인트 기준 누적 순위(홈 요약 카드용). 본인 행 1건만 `v_rank_total` 직접 조회 — addendum B항. 순위 미대상(미응시·최소 회차 미달)이면 `null`.
+### `GET /api/me` → `{ nickname, orgUnitName, departmentName, totalScore, roundsTaken, averageRank }`
+- `averageRank` = **평균 포인트 기준** 순위(홈 요약 카드용, 2026-08-25 포상 기준 개정).
+  본인 행 1건만 `v_rank_average` 직접 조회 — addendum B항. 순위 미대상(미응시·최소 회차 미달)이면 `null`.
 
 ### `GET /api/me/stats`
 내 기록 화면용(T11).
@@ -141,24 +142,32 @@ res { isCorrect, isTimeout, correctAnswerLabel, explanation, legalRef,
 ## 대시보드
 
 ### `GET /api/dashboard`
-순위 목록 4종은 `ranking_snapshot`만 조회. **순위 산정 기준은 포인트**(business-rules 5.0, N항).
-`me.totalRank`/`me.departmentRank`는 뷰에서 **본인 행만** 조회 허용 → addendum B항
+순위 목록은 `ranking_snapshot`만 조회(평균·부서 2종 + 회차별은 별도 엔드포인트).
+**순위 산정 기준은 포인트**(business-rules 5.0, N항). 2026-08-25 개정: '전체 누적'(total)은
+포상 기준(평균)과 어긋나 응답에서 제거했다.
+`me.averageRank`/`me.departmentRank`는 뷰에서 **본인 행만** 조회 허용 → addendum B항
 `me.rankedParticipants`/`me.rankedDepartments`는 순위 대상 인원·부서 수(내 순위 카드 분모) —
 뷰 count 조회 허용(B항 확장, T10에서 승인)
 `minRoundsRequired`는 `fn_min_rounds()` 결과 → addendum C항
 ```
 {
-  me: { nickname, departmentId, totalScore, totalPoints, roundsTaken,
-        totalRank|null, departmentRank|null,
+  me: { nickname, departmentId,
+        averageRank|null, departmentRank|null,
         rankEligible: boolean, minRoundsRequired,
         rankedParticipants, rankedDepartments },
-  total:      [{ rank, nickname, orgUnitName, totalPoints, roundsTaken }],
   average:    [{ rank, nickname, orgUnitName, avgPoints, roundsTaken }],
-  department: [{ rank, departmentId, departmentName, orgUnitName, participants, avgPoints }],
+  department: [{ rank, departmentId, departmentName, orgUnitName, participants, avgPoints,
+                 compositeScore, avgParticipationPct }],
   computedAt,          // 최신 snapshot 적재 시각. snapshot 부재 시 null
   visibleRows          // 순위표 기본 표시 행 수 = app_config.rank_visible_rows (규칙 7)
 }
 ```
+- 2026-08-25 개정: `me.totalScore`/`me.totalPoints`/`me.roundsTaken`은 대시보드 화면이 쓰지 않는
+  dead payload였고 매 요청 `quiz_session_item` 전량 조회를 유발해 제거했다(누적 점수는 홈의
+  `GET /api/me`가 계속 제공한다).
+- `compositeScore`(0~100, 소수 1자리) = 부서 종합점수(business-rules 5.2 산식),
+  `avgParticipationPct`(0~100, 소수 1자리) = 부서 평균 참여율. 산식 개편(2026-08-25) 이전에
+  적재된 구 스냅샷에는 두 필드가 없다 — 클라이언트는 optional로 다루고 `avgPoints`로 폴백한다.
 - `me.departmentId`: 부서 탭 내 부서 행 배지 판정용. `department[].departmentId`와 **id로** 비교한다.
   ★ **부서명은 판정 키로 쓰지 않는다** — 부서명은 소속 안에서만 유일하고(`UNIQUE(org_unit_id, name)`),
   실제로 193개 부서 중 108개가 동명이다('직업능력개발부' 32곳, '기업인재혁신부' 20곳).
@@ -167,9 +176,10 @@ res { isCorrect, isTimeout, correctAnswerLabel, explanation, legalRef,
 - `departmentId`는 `v_rank_department.department_id`(= `department.id`)다. 뷰가 이미 노출하므로
   스키마 변경이 없다.
 - 구 스냅샷(`departmentId` 부재)에서는 클라이언트가 배지를 표시하지 않는다 — 틀린 배지 금지.
-- 부서 탭 표 헤더는 `순위` `부서` `소속` `평균 포인트`다. 동명 부서 식별을 위해 소속명을 병기한다
-  (두 토큰 모두 `design/copy.md` 승인 목록에 있다). 참여자 하한은 `참여자 3명 이상인 부서만
-  표시됩니다` 안내가 보증한다.
+- 부서 탭(우수 부서) 표 헤더는 `순위` `부서` `소속` `종합점수`다. 동명 부서 식별을 위해 소속명을
+  병기한다(두 토큰 모두 `design/copy.md` 승인 목록에 있다). 행 하단에 `평균 {avgPoints}P ·
+  참여율 {pct}%` 보조 표기를 붙인다(copy.md 부서 행 보조 표기). 참여자 하한은 `참여자 3명
+  이상인 부서만 표시됩니다` 안내가 보증한다.
 
 ### `GET /api/dashboard/round/[no]`
 → `[{ rank, nickname, orgUnitName, points, score, pct }]`
