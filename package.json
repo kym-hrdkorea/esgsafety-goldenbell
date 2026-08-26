@@ -7,6 +7,7 @@
     "build": "next build",
     "start": "next start",
     "test": "node --test lib/grading.test.ts",
+    "build:prelearning": "node db/build-prelearning-sql.mjs && node db/validate-prelearning.mjs",
     "test:items": "node db/validate-items.mjs",
     "test:prelearning": "node db/validate-prelearning.mjs",
     "test:outcomes": "node db/validate-outcomes.mjs",
