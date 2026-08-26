@@ -125,29 +125,28 @@
 </div>
 </x-dc>
 <script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:760,&quot;height&quot;:1120}}">
-// 실DB quiz_round.theme 8건 — 짧은 더미가 폭 문제를 감췄다 (ux-findings C절)
+// 실DB quiz_round.theme 6건 (2026-08-26 청렴 혼합 개정 — copy.md 등재본과 동일)
 const ROUNDS = [
-  { no: 1, label: '안전, 우리 이야기로 시작하기', score: 11 },
-  { no: 2, label: '여름을 안전하게 — 온열질환과 건강', score: 12 },
-  { no: 3, label: '불, 처음 3분이 전부다', score: null, open: true },
-  { no: 4, label: '나가는 길을 알고 있는가', score: null },
-  { no: 5, label: '사무실은 안전한가', score: null },
-  { no: 6, label: '오래 일하려면 — 몸과 마음', score: null },
-  { no: 7, label: '위험은 우리가 찾는다', score: null },
-  { no: 8, label: '안전, 함께 해냄', score: null }
+  { no: 1, label: '안전·청렴, 기본부터', score: 11 },
+  { no: 2, label: '일상의 위험, 금품의 선', score: 12 },
+  { no: 3, label: '그 순간, 어떻게 할까', score: null, open: true },
+  { no: 4, label: '사무실과 이해관계 점검', score: null },
+  { no: 5, label: '실전 판단, 안전과 청렴', score: null },
+  { no: 6, label: '신고가 지키는 우리', score: null }
 ];
-// 영역 라벨은 copy.md 확정값 (구현 CATEGORY_LABELS와 동일)
+// 영역 라벨은 copy.md 확정값 (구현 CATEGORY_LABELS와 동일 — C=청렴 포함)
 const AREAS = [
   { label: '화재·대피', pct: 92 },
   { label: '생활안전', pct: 100 },
   { label: '직장 건강', pct: 67 },
   { label: '사무실 안전', pct: 100 },
-  { label: '위험성평가', pct: 50 }
+  { label: '위험성평가', pct: 50 },
+  { label: '청렴', pct: 80 }
 ];
 const LEARNS = [
-  { no: 1, label: '안전, 우리 이야기로 시작하기', seen: true },
-  { no: 2, label: '여름을 안전하게 — 온열질환과 건강', seen: true },
-  { no: 3, label: '불, 처음 3분이 전부다', seen: false }
+  { no: 1, label: '안전·청렴, 기본부터', seen: true },
+  { no: 2, label: '일상의 위험, 금품의 선', seen: true },
+  { no: 3, label: '그 순간, 어떻게 할까', seen: false }
 ];
 const NUM = "'Chakra Petch', ui-monospace, monospace";
 

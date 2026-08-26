@@ -203,16 +203,18 @@ NEGATIVE: [공통 네거티브] + no human faces, no injury or blood, no realist
 fire, no ambulance siren, no crowd
 ```
 
-| 회차 | 주제 | SUBJECT 문장 |
+| 회차 | 주제 (2026-08-26 청렴 혼합 개정) | SUBJECT 문장 |
 |---|---|---|
-| **1회차** | 안전, 우리 이야기로 시작하기 | `Three hard hats of slightly different sizes arranged in a row, the middle one in safety yellow, with a small speech-bubble outline shape floating above them to suggest people talking about safety together.` |
-| **2회차** | 여름을 안전하게 — 온열질환과 건강 | `A tall water bottle in safety yellow beside a wide parasol or shade canopy, with a simple thermometer shape showing a high reading, and three short horizontal heat-shimmer lines above them.` |
-| **3회차** | 불, 처음 3분이 전부다 | `A fire extinguisher standing upright in safety yellow, its safety pin drawn as a separate small shape beside it, next to a wall-mounted smoke detector disc. A stylized clock face with only a small arc of its dial marked, suggesting a very short window of time.` |
-| **4회차** | 사무실은 안전한가 | `A desk seen from the side with a monitor on top, a tall filing cabinet strapped to the wall behind it, and a coiled power strip on the floor in safety yellow with one cable running off frame.` |
-| **5회차** | 위험은 우리가 찾는다 | `A large magnifying glass in safety yellow held over a clipboard checklist with three checkmark rows, and a small triangular warning sign shape caught inside the lens circle.` |
-| **6회차** | 안전, 함께 해냄 | `A brass-gold bell at the center being struck, with six small square markers arranged in a row beneath it and all six filled in, suggesting a completed six-week course. Two short motion arcs beside the bell rim.` |
+| **1회차** | 안전·청렴, 기본부터 | `Three hard hats of slightly different sizes arranged in a row, the middle one in safety yellow, with a small shield outline containing a check mark floating above them, suggesting safety and integrity starting together from the basics.` |
+| **2회차** | 일상의 위험, 금품의 선 | `A simple balance scale in safety yellow with a small gift box outline on one pan, beside an upright clipboard with one bold horizontal line marked across it like a limit line, suggesting everyday risk checks and a clear line on gifts.` |
+| **3회차** | 그 순간, 어떻게 할까 | `A stylized clock face in safety yellow beside two arrow paths branching from a single point, the correct arrow curving toward a small open door shape, suggesting a decisive moment and choosing the right way out.` |
+| **4회차** | 사무실과 이해관계 점검 | `A desk seen from the side with a monitor on top and a tall filing cabinet strapped to the wall behind it, beside two overlapping circle outlines with a small magnifying glass held over the overlapping area, suggesting an office check that includes overlapping interests.` |
+| **5회차** | 실전 판단, 안전과 청렴 | `A fire extinguisher standing upright in safety yellow next to a shield outline of similar height, with a small checklist card leaning between them, suggesting real-situation judgment in both safety and integrity.` |
+| **6회차** | 신고가 지키는 우리 | `A brass-gold bell at the center being struck, with a small whistle and a folded report document leaning at its base, and six small square markers arranged in a row beneath it all filled in, suggesting a completed six-week course closed out by reporting.` |
 
 > 6회차만 브라스 골드를 쓴다. 완주 = 성취이기 때문이다. 1~5회차는 옐로만 쓴다.
+> ※ 2026-08-26 테마 개정으로 SUBJECT 6건을 재작성했다. **기존 생성 자산은 구 테마 기준**이므로
+>   재생성 여부는 별도 태스크로 결정한다(스타일·네거티브 공통문은 불변).
 
 ### 2-3. 순위 배지 1·2·3위
 

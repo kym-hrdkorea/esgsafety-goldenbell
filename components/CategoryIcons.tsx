@@ -124,6 +124,18 @@ export function AgencyIcon(p: IconProps) {
   );
 }
 
+/** C — 청렴 (2026-08-26 청렴 혼합 개편) */
+// 방패 실루엣은 기존 8종(불꽃/집/하트/가로직사각/십자상자/클립보드/책/기둥건물)과
+// 겹치지 않는다. 체크는 클립보드(K)에도 있지만 바깥 윤곽이 달라 18px에서 구별된다.
+export function IntegrityIcon(p: IconProps) {
+  return (
+    <Frame {...p}>
+      <path d="M12 3.2 19 6v5c0 4.4-2.9 7.6-7 9.2-4.1-1.6-7-4.8-7-9.2V6l7-2.8Z" />
+      <path d="M9.2 11.6l2.1 2.1 3.6-3.9" />
+    </Frame>
+  );
+}
+
 /** 영역 코드 → 아이콘. me 화면의 CATEGORY_LABELS와 같은 코드를 쓴다. */
 export const CATEGORY_ICONS: Record<
   string,
@@ -137,4 +149,5 @@ export const CATEGORY_ICONS: Record<
   K: AssessIcon,
   L: LawIcon,
   S: AgencyIcon,
+  C: IntegrityIcon,
 };

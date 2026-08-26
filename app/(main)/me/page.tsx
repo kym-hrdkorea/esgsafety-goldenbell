@@ -24,7 +24,8 @@ type Stats = {
   prelearningViewed: number[];
 };
 
-// 영역 코드 → 라벨 (마스터 시트 범례 부재로 문항 내용 기반 확정 — T11 사용자 승인)
+// 영역 코드 → 라벨 (마스터 시트 범례 부재로 문항 내용 기반 확정 — T11 사용자 승인.
+// C는 2026-08-26 청렴 혼합 개편 추가 — copy.md 영역 라벨과 동일)
 const CATEGORY_LABELS: [string, string][] = [
   ["F", "화재·대피"],
   ["G", "생활안전"],
@@ -34,6 +35,7 @@ const CATEGORY_LABELS: [string, string][] = [
   ["K", "위험성평가"],
   ["L", "안전 법령"],
   ["S", "공단 안전"],
+  ["C", "청렴"],
 ];
 
 // 내 기록: 회차별 점수 + 영역별 정답률 + 사전학습 열람 (design/mocks/내기록, copy.md)
