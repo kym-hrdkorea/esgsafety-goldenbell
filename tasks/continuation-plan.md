@@ -137,6 +137,9 @@
 - 법령·수치 문항의 근거를 확인하고 `legal_ref`와 해설을 동기화한다.
 - 퀴즈를 먼저 시작한 뒤 사전학습을 열람한 경우 성과의 사전학습 열람군으로 세지 않는다.
 - `db/prelearning.json`과 `db/06_seed_prelearning.sql`을 추가하고, 회차당 6개 카드·6회차 본문을 자동검증한다.
+- 2026-08-26 개정: 청렴 혼합 개편에 맞춰 테마를 안전+청렴 이중 축으로 전환하고 36카드를 재작성했다(회차당 안전 4+청렴 2).
+  완료 조건 확장 — 본문이 해당 회차 12문항 중 측정 순수쌍(M05·M07) 문항을 제외한 전 문항의 지식점을 커버(청렴 전량 포함)하고,
+  JSON↔SQL·title↔03시드·테마↔copy.md 삼중 정합 검증을 통과하며, 06 시드는 `pnpm build:prelearning`(db/build-prelearning-sql.mjs)으로 재생성한다.
 - `2-04`, `2-08`, `4-09`, `6-03`, `6-07`, `6-11`을 2026-08-12 현행 공식 조문과 대조해 문항·선택지·해설·근거를 수정했다.
 - `v_prelearning_effect`를 `prelearning_view.viewed_at <= quiz_session.started_at` 조건으로 교체해 퀴즈 시작 후 재열람을 열람 효과군에서 제외한다.
 - 검증 기록은 `spec/legal-sources.md`에 남겼고, `H4` 회귀 시나리오와 `test:prelearning` 검증 명령을 추가했다.
