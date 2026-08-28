@@ -153,7 +153,14 @@ function recomputeGroups(groupKeyOf) {
       ),
     });
   }
-  // 뷰와 동일 정렬·RANK 의미(1,2,2,4). 동순위 = 종합점수·참여자 수 모두 동일
+  return rows;
+}
+
+// 뷰와 동일 정렬·RANK 의미(1,2,2,4). 동순위 = 종합점수·참여자 수 모두 동일.
+// ★ 뷰의 RANK()는 WHERE(최소 참여자 필터) 이후 행에만 매겨지므로,
+//   재계산도 반드시 "필터 통과 집합"에만 순위를 부여해야 한다 (2026-08-28 수정 —
+//   미달 그룹까지 포함해 매기면 미달 그룹이 중간 순위에 끼는 순간 오탐이 난다).
+function assignRanks(rows) {
   rows.sort(
     (a, b) => b.compositeScore - a.compositeScore || b.participants - a.participants
   );
@@ -172,7 +179,7 @@ function recomputeGroups(groupKeyOf) {
 }
 
 function compare(label, viewRows, jsRows, idField, minParticipants, hasSessions) {
-  const eligible = jsRows.filter((r) => r.participants >= minParticipants);
+  const eligible = assignRanks(jsRows.filter((r) => r.participants >= minParticipants));
   const viewById = new Map(viewRows.map((r) => [Number(r[idField]), r]));
   expect(
     viewRows.length === eligible.length &&
