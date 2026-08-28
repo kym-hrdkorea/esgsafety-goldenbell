@@ -98,7 +98,7 @@ export default function HomePage() {
           </div>
           <div className="flex flex-col gap-px">
             <div className="text-[15px] font-extrabold tracking-[0.02em] text-gb-yellow">
-              HRDK 안전 골든벨 퀴즈 리그
+              HRDK 안전·청렴 ON! 골든벨
             </div>
             <div className="text-[13px] font-semibold tracking-[0.04em] text-gb-text-strong-sub">
               안전 이룸, 함께 해냄
