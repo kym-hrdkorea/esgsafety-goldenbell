@@ -53,8 +53,8 @@ const [
 ]);
 
 expect(configN === 14, `app_config=${configN}, 기대값=14`);
-expect(categoryN === 4 && unitN === 50 && departmentN === 193,
-  `조직=${categoryN}/${unitN}/${departmentN}, 기대값=4/50/193`);
+expect(categoryN === 4 && unitN === 50 && departmentN === 194,
+  `조직=${categoryN}/${unitN}/${departmentN}, 기대값=4/50/194 (2026-08-31 국가자격디지털혁신팀 추가)`);
 expect(
   [participantN, sessionN, sessionItemN, prelearningViewN]
     .every((value) => value === 0),

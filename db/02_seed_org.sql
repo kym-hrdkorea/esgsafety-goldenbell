@@ -1,7 +1,9 @@
 -- =====================================================
 -- 02_seed_org.sql : 조직 시드 (자동 생성 / 수정 금지)
 -- 출처: 부서명단.xlsx Sheet2
--- 소속(org_unit) 50개 / 부서(department) 193개
+-- 소속(org_unit) 50개 / 부서(department) 194개
+--   ※ 194번째(id 195, 국가자격디지털혁신팀)는 2026-08-31 운영 요청으로
+--     실DB에 INSERT 후 이 파일에 수기 반영 — xlsx 원본에는 없음
 -- =====================================================
 
 INSERT INTO org_category (code, name, sort_order) VALUES
@@ -257,8 +259,11 @@ INSERT INTO department (id, org_unit_id, name, sort_order) VALUES
   (190, 50, '미얀마', 14),
   (191, 50, '동티모르', 15),
   (192, 50, '라오스', 16),
-  (193, 50, '타지키스탄', 17)
+  (193, 50, '타지키스탄', 17),
+  -- 2026-08-31 추가 (능력평가국 산하, 실DB id 195와 일치시킴 — id 194는 실DB에서
+  -- NOT NULL 제약 실패로 소진된 결번)
+  (195, 10, '국가자격디지털혁신팀', 5)
 ON CONFLICT (id) DO NOTHING;
 
 SELECT setval('org_unit_id_seq', 50);
-SELECT setval('department_id_seq', 193);
+SELECT setval('department_id_seq', 195);
